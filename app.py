@@ -90,21 +90,20 @@ with col_preview:
         # Desenhar a estrutura e definir as coordenadas
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
-            canvas.rectangle(, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse(, outline=cor_texto_pc, width=4)
+            # [CORREÇÃO] Adicionadas as coordenadas (50, 130, 550, 370) para o retângulo horizontal
+            canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([70, 235, 100, 265], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (370, 145))
             
             pos_logo_x = 240
             pos_logo_y = 140
-            
-            # Coordenadas base dos textos (o ajuste fino é feito na ancoragem)
             pos_txt1_x, pos_txt1_y = 240, 310
             pos_txt2_x, pos_txt2_y = 240, 345
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle(, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse(, outline=cor_texto_pc, width=4)
+            canvas.rectangle([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
@@ -114,8 +113,8 @@ with col_preview:
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse(, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse(, outline=cor_texto_pc, width=4)
+            canvas.ellipse([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
@@ -136,9 +135,8 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # Carregar Fonte do Sistema para permitir redimensionamento (TrueType)
+        # Carregar Fonte do Sistema
         try:
-            # Fonte comum pré-instalada em servidores Linux/Streamlit Cloud
             font1 = ImageFont.truetype("LiberationSans-Regular.ttf", tamanho_fonte1)
             font2 = ImageFont.truetype("LiberationSans-Regular.ttf", tamanho_fonte2)
         except IOError:
@@ -146,11 +144,10 @@ with col_preview:
                 font1 = ImageFont.truetype("DejaVuSans.ttf", tamanho_fonte1)
                 font2 = ImageFont.truetype("DejaVuSans.ttf", tamanho_fonte2)
             except IOError:
-                # Fallback caso o sistema não encontre nenhuma (usa tamanho padrão)
                 font1 = ImageFont.load_default()
                 font2 = ImageFont.load_default()
             
-        # Desenha os textos com os respetivos tamanhos escolhidos
+        # Desenha os textos com os respetivos tamanhos
         canvas.text((pos_txt1_x, pos_txt1_y), texto_linha1, fill=cor_texto_pc, font=font1, anchor="mm")
         canvas.text((pos_txt2_x, pos_txt2_y), texto_linha2, fill=cor_texto_pc, font=font2, anchor="mm")
 
@@ -160,7 +157,7 @@ with col_preview:
         else:
             imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-        st.image(imagem_final, caption="Design com fontes redimensionáveis", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+        st.image(imagem_final, caption="Design pronto", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
         # Download do design atualizado
         buf = io.BytesIO()
@@ -175,3 +172,4 @@ with col_preview:
         )
     else:
         st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
+
