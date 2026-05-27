@@ -2,9 +2,25 @@ import streamlit as st
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import io
+import urllib.request
 
 # Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
+
+# FUNÇÃO PARA DESCARREGAR UMA FONTE REAL QUE ACEITA REDIMENSIONAMENTO
+@st.cache_data
+def carregar_fonte_web():
+    try:
+        # Descarrega a fonte Roboto (Google Fonts) para garantir que funciona em qualquer servidor
+        url = "https://github.com"
+        ficheiro_fonte = "Roboto-Regular.ttf"
+        urllib.request.urlretrieve(url, ficheiro_fonte)
+        return ficheiro_fonte
+    except:
+        return None
+
+# Inicializar o download da fonte
+fonte_disponivel = carregar_fonte_web()
 
 # FUNÇÃO PARA LIMPAR/VOLTAR AO INÍCIO
 def reiniciar_configurador():
@@ -49,13 +65,13 @@ with col_opcoes:
     
     # Linha Superior
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
-    tamanho_fonte1 = st.slider("Tamanho do texto superior:", min_value=10, max_value=40, value=18, step=1, key="size_txt1")
+    tamanho_fonte1 = st.slider("Tamanho do texto superior:", min_value=12, max_value=36, value=20, step=1, key="size_txt1")
     
     st.markdown("---")
     
     # Linha Inferior
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
-    tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=40, value=14, step=1, key="size_txt2")
+    tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=30, value=14, step=1, key="size_txt2")
 
     # 4. Configuração do Código QR
     st.subheader("4. Conteúdo do Código QR")
@@ -90,37 +106,36 @@ with col_preview:
         # Desenhar a estrutura e definir as coordenadas
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
-            # [CORREÇÃO] Adicionadas as coordenadas (50, 130, 550, 370) para o retângulo horizontal
             canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
             canvas.ellipse([70, 235, 100, 265], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (370, 145))
             
             pos_logo_x = 240
             pos_logo_y = 140
-            pos_txt1_x, pos_txt1_y = 240, 310
-            pos_txt2_x, pos_txt2_y = 240, 345
+            pos_txt1_x, pos_txt1_y = 240, 305
+            pos_txt2_x, pos_txt2_y = 240, 340
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+            canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([115, 65, 145, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
             pos_logo_y = 110
-            pos_txt1_x, pos_txt1_y = 300, 400
-            pos_txt2_x, pos_txt2_y = 300, 435
+            pos_txt1_x, pos_txt1_y = 300, 395
+            pos_txt2_x, pos_txt2_y = 300, 430
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
             canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
             pos_logo_y = 120
-            pos_txt1_x, pos_txt1_y = 300, 400
-            pos_txt2_x, pos_txt2_y = 300, 435
+            pos_txt1_x, pos_txt1_y = 300, 395
+            pos_txt2_x, pos_txt2_y = 300, 430
 
         # Inserção do Logótipo (se existir)
         if ficheiro_logo is not None:
@@ -135,19 +150,15 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # Carregar Fonte do Sistema
-        try:
-            font1 = ImageFont.truetype("LiberationSans-Regular.ttf", tamanho_fonte1)
-            font2 = ImageFont.truetype("LiberationSans-Regular.ttf", tamanho_fonte2)
-        except IOError:
-            try:
-                font1 = ImageFont.truetype("DejaVuSans.ttf", tamanho_fonte1)
-                font2 = ImageFont.truetype("DejaVuSans.ttf", tamanho_fonte2)
-            except IOError:
-                font1 = ImageFont.load_default()
-                font2 = ImageFont.load_default()
+        # Configurar a fonte descarregada dinamicamente
+        if fonte_disponivel:
+            font1 = ImageFont.truetype(fonte_disponivel, tamanho_fonte1)
+            font2 = ImageFont.truetype(fonte_disponivel, tamanho_fonte2)
+        else:
+            font1 = ImageFont.load_default()
+            font2 = ImageFont.load_default()
             
-        # Desenha os textos com os respetivos tamanhos
+        # Desenha os textos com os respetivos tamanhos reais
         canvas.text((pos_txt1_x, pos_txt1_y), texto_linha1, fill=cor_texto_pc, font=font1, anchor="mm")
         canvas.text((pos_txt2_x, pos_txt2_y), texto_linha2, fill=cor_texto_pc, font=font2, anchor="mm")
 
@@ -157,7 +168,7 @@ with col_preview:
         else:
             imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-        st.image(imagem_final, caption="Design pronto", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+        st.image(imagem_final, caption="Design pronto com tamanho dinâmico", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
         # Download do design atualizado
         buf = io.BytesIO()
@@ -167,9 +178,10 @@ with col_preview:
         st.download_button(
             label="💾 Descarregar Design (PNG)",
             data=byte_im,
-            file_name=f"porta_chaves_tamanhos.png",
+            file_name=f"porta_chaves_final.png",
             mime="image/png"
         )
     else:
         st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
+
 
