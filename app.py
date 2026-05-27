@@ -13,7 +13,7 @@ def reiniciar_configurador():
     st.rerun()
 
 st.title("🎨 Personalize o seu Porta-Chaves Web")
-st.write("Escolha o formato, adicione o seu logótipo, altere as cores, tipos e estilos de letra em tempo real.")
+st.write("Escolha o formato, adicione o seu logótipo, altere as cores da página, do objeto e os textos em tempo real.")
 
 # Divisão da página em duas colunas
 col_opcoes, col_preview = st.columns([1, 1.2])
@@ -21,8 +21,22 @@ col_opcoes, col_preview = st.columns([1, 1.2])
 with col_opcoes:
     st.header("⚙️ Opções de Personalização")
     
-    # 1. Escolha do Formato Físico
-    st.subheader("1. Formato do Porta-Chaves")
+    # NEW: 1. Configuração do Fundo da Página Web
+    st.subheader("1. Cor do Fundo da Página")
+    cor_fundo_pagina = st.color_picker("Escolha a cor de fundo do site:", "#F0F2F6", key="cor_site_custom")
+    
+    # Injeção de CSS dinâmico para mudar a cor de fundo da página web em tempo real
+    css_custom = f"""
+    <style>
+        .stApp {{
+            background-color: {cor_fundo_pagina} !important;
+        }}
+    </style>
+    """
+    st.markdown(css_custom, unsafe_allow_html=True)
+    
+    # 2. Escolha do Formato Físico
+    st.subheader("2. Formato do Porta-Chaves")
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
@@ -37,15 +51,15 @@ with col_opcoes:
         cor_fundo_pc = "#1A1A1A"
         cor_texto_pc = "#FFFFFF"
     else:
-        cor_fundo_pc = st.color_picker("Escolha a cor de fundo:", "#FFFFFF", key="cor_fundo_custom")
+        cor_fundo_pc = st.color_picker("Escolha a cor de fundo do porta-chaves:", "#FFFFFF", key="cor_fundo_custom")
         cor_texto_pc = st.color_picker("Escolha a cor do texto/linhas:", "#000000", key="cor_texto_custom")
 
-    # 2. Upload do Logótipo
-    st.subheader("2. Imagem / Logótipo")
+    # 3. Upload do Logótipo
+    st.subheader("3. Imagem / Logótipo")
     ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
 
-    # 3. Configuração dos Textos, Fontes e Tamanhos
-    st.subheader("3. Elementos de Texto e Estilos")
+    # 4. Configuração dos Textos, Fontes e Tamanhos
+    st.subheader("4. Elementos de Texto e Estilos")
     
     # Linha Superior
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
@@ -61,8 +75,8 @@ with col_opcoes:
     estilo_fonte2 = st.selectbox("Estilo da linha inferior:", ["Padrão Limpo", "Negrito Forte", "Efeito Itálico"], key="style_txt2")
     tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=26, value=14, step=2, key="size_txt2")
 
-    # 4. Configuração do Código QR
-    st.subheader("4. Conteúdo do Código QR")
+    # 5. Configuração do Código QR
+    st.subheader("5. Conteúdo do Código QR")
     tipo_qr = st.selectbox("O que o QR Code vai abrir?", ["Link (URL)", "Texto Secreto", "Número de Telefone"], key="tipo_qr_escolhido")
     
     if tipo_qr == "Link (URL)":
@@ -80,10 +94,10 @@ with col_opcoes:
 with col_preview:
     st.header("👁️ Pré-visualização")
     
-    # Verifica se existem dados válidos preenchidos
     if dados_qr and dados_qr not in ["https://", "+351", ""]:
         tamanho_base = (600, 500)
-        porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
+        # O fundo da mesa de trabalho adapta-se de forma elegante à cor do site escolhida
+        porta_chaves = Image.new("RGB", tamanho_base, cor_fundo_pagina)
         canvas = ImageDraw.Draw(porta_chaves)
         
         # Gerar o Código QR interno
@@ -92,7 +106,7 @@ with col_preview:
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
         
-        # Definir as coordenadas das formas geométricas
+        # Desenhar a estrutura
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
             coord_retangulo = [50, 130, 550, 370]
@@ -145,17 +159,13 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # FUNÇÃO PARA DESENHAR TEXTOS COM SIMULAÇÃO REAL DE FONTES (SANS, SERIF, MONO)
+        # FUNÇÃO PARA DESENHAR TEXTOS COM SIMULAÇÃO REAL DE FONTES
         def desenho_texto_custom(draw_canvas, texto, coordenadas, cor, familia, estilo, tamanho):
             x, y = coordenadas
             texto_espacado = " ".join(list(texto))
-            
-            # Criar tela auxiliar transparente
             img_txt = Image.new("RGBA", (1200, 100), (0, 0, 0, 0))
             draw_txt = ImageDraw.Draw(img_txt)
             
-            # Atribuição estável de caminhos de fontes nativas do Linux (Streamlit Cloud)
-            # Isto garante que a troca de fontes funciona e altera o aspeto visual
             nome_fonte = "LiberationSans-Regular.ttf"
             if familia == "Serif (Clássica)":
                 nome_fonte = "LiberationSerif-Regular.ttf"
@@ -167,17 +177,14 @@ with col_preview:
             except:
                 fnt = ImageFont.load_default()
             
-            # Desenha o texto base
             draw_txt.text((10, 10), texto_espacado, fill=cor, font=fnt)
             
-            # Aplicação dos estilos
             if estilo == "Negrito Forte":
                 draw_txt.text((11, 10), texto_espacado, fill=cor, font=fnt)
                 draw_txt.text((10, 11), texto_espacado, fill=cor, font=fnt)
             elif estilo == "Efeito Itálico":
                 img_txt = img_txt.transform(img_txt.size, Image.AFFINE, (1, -0.2, 0, 0, 1, 0), Image.BICUBIC)
             
-            # Redimensionamento vetorial para obedecer ao tamanho do Slider
             largura_base = len(texto_espacado) * 8.5 if familia == "Monospace (Industrial)" else len(texto_espacado) * 7.5
             altura_base = 25
             proporcao = tamanho / 14.0
@@ -192,7 +199,7 @@ with col_preview:
                 py = y - (caixa_texto.height // 2)
                 porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
 
-        # Desenhar as duas linhas na imagem
+        # Desenhar as duas linhas
         desenho_texto_custom(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, tipo_fonte1, estilo_fonte1, tamanho_fonte1)
         desenho_texto_custom(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, tipo_fonte2, estilo_fonte2, tamanho_fonte2)
 
@@ -202,10 +209,7 @@ with col_preview:
         else:
             imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-        st.image(imagem_final, caption="Design finalizado", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
-        
-        # Preparação do download do ficheiro
-        buf = io.BytesIO()
+
 
 
 
