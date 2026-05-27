@@ -6,9 +6,8 @@ import io
 # Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
 
-# --- FUNÇÃO PARA LIMPAR/VOLTAR AO INÍCIO ---
+# FUNÇÃO PARA LIMPAR/VOLTAR AO INÍCIO
 def reiniciar_configurador():
-    # Limpa todas as variáveis guardadas na sessão
     for chave in list(st.session_state.keys()):
         del st.session_state[chave]
     st.rerun()
@@ -24,7 +23,7 @@ with col_opcoes:
     
     # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
-    formato = st.selectbox("Selecione a forma:", ["Retangular", "Quadrado", "Circular"], key="formato_escolhido")
+    formato = st.selectbox("Selecione a forma:", ["Retangular Alongado", "Quadrado", "Circular"], key="formato_escolhido")
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
     # Definição de cores base do material
@@ -60,7 +59,7 @@ with col_opcoes:
     else:
         dados_qr = st.text_input("Insira o número (com indicativo):", "+351", key="dados_tel")
 
-    # --- BOTÃO DE VOLTAR AO INÍCIO ---
+    # BOTÃO DE VOLTAR AO INÍCIO
     st.markdown("---")
     st.button("🔄 Voltar ao Início / Limpar Tudo", on_click=reiniciar_configurador, type="secondary")
 
@@ -69,40 +68,55 @@ with col_preview:
     st.header("👁️ Pré-visualização")
     
     if dados_qr and dados_qr not in ["https://", "+351", ""]:
+        # A tela base continua quadrada (500x500) para manter o espaço lateral, 
+        # mas desenhamos a forma interna mais retangular
         tamanho_base = (500, 500)
-        porta_chaves = Image.new("RGB", tamanho_base, cor_fundo_pc)
+        porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6") # Fundo cinza neutro para a aplicação
         canvas = ImageDraw.Draw(porta_chaves)
+        
+        centro_x = 250
         
         # Gerar o Código QR interno
         qr = qrcode.QRCode(version=1, box_size=5, border=1)
         qr.add_data(dados_qr)
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
-        img_qr = img_qr.resize((180, 180))
+        img_qr = img_qr.resize((160, 160))
         
-        centro_x = 250
-        
-        if formato == "Retangular":
-            canvas.rectangle([140, 40, 360, 460], outline=cor_texto_pc, width=5)
-            canvas.ellipse([235, 60, 265, 90], outline=cor_texto_pc, width=4)
-            porta_chaves.paste(img_qr, (160, 230))
+        # Desenhar a estrutura baseada na forma
+        if formato == "Retangular Alongado":
+            # Desenha o fundo do porta-chaves retangular (mais estreito e alto: 320x460)
+            canvas.rectangle([140, 20, 360, 480], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            # Furo para a argola
+            canvas.ellipse([235, 35, 265, 65], outline=cor_texto_pc, width=4)
+            # Posição do QR Code
+            porta_chaves.paste(img_qr, (170, 240))
+            pos_texto_y = 440
+            pos_logo_y = 95
+            
         elif formato == "Quadrado":
-            canvas.rectangle([50, 50, 450, 450], outline=cor_texto_pc, width=5)
+            canvas.rectangle([50, 50, 450, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
             canvas.ellipse([70, 70, 100, 100], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (160, 210))
+            pos_texto_y = 410
+            pos_logo_y = 95
+            
         elif formato == "Circular":
-            canvas.ellipse([50, 50, 450, 450], outline=cor_texto_pc, width=5)
-            canvas.ellipse([235, 70, 265, 100], outline=cor_texto_pc, width=4)
+            canvas.ellipse([50, 50, 450, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([235, 65, 265, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (160, 210))
+            pos_texto_y = 410
+            pos_logo_y = 110
 
-        # Inserção do Logótipo
+        # Inserção do Logótipo (se existir)
         if ficheiro_logo is not None:
             try:
                 logo = Image.open(ficheiro_logo).convert("RGBA")
-                logo.thumbnail((180, 110))
+                # Define tamanho limite adequado para o retângulo estreito
+                max_largura = 140 if formato == "Retangular Alongado" else 180
+                logo.thumbnail((max_largura, 110))
                 logo_x = centro_x - (logo.width // 2)
-                logo_y = 100 if formato == "Retangular" else 95
-                porta_chaves.paste(logo, (logo_x, logo_y), logo if logo.mode == 'RGBA' else None)
+                porta_chaves.paste(logo, (logo_x, pos_logo_y), logo if logo.mode == 'RGBA' else None)
             except:
                 st.error("Erro ao carregar logótipo.")
 
@@ -112,22 +126,28 @@ with col_preview:
         except:
             font = ImageFont.load_default()
             
-        pos_texto_y = 430 if formato == "Retangular" else 410
         canvas.text((centro_x, pos_texto_y), texto_baixo, fill=cor_texto_pc, anchor="mm")
 
-        st.image(porta_chaves, caption="Design atualizado", use_column_width=False, width=450)
+        # Cortar as margens vazias da imagem final se for retangular para exportar com o formato correto
+        if formato == "Retangular Alongado":
+            imagem_final = porta_chaves.crop((135, 15, 365, 485))
+        else:
+            imagem_final = porta_chaves.crop((45, 45, 455, 455))
+
+        st.image(imagem_final, caption="Design atualizado", use_column_width=False, width=300 if formato == "Retangular Alongado" else 400)
         
-        # Download do design atual
+        # Download do design atualizado
         buf = io.BytesIO()
-        porta_chaves.save(buf, format="PNG")
+        imagem_final.save(buf, format="PNG")
         byte_im = buf.getvalue()
         
         st.download_button(
-            label="💾 Descarregar Design Atual (PNG)",
+            label="💾 Descarregar Design (PNG)",
             data=byte_im,
-            file_name=f"porta_chaves_personalizado.png",
+            file_name=f"porta_chaves_{formato.lower().replace(' ', '_')}.png",
             mime="image/png"
         )
     else:
         st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
+
 
