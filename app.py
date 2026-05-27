@@ -13,7 +13,7 @@ def reiniciar_configurador():
     st.rerun()
 
 st.title("🎨 Personalize o seu Porta-Chaves Web")
-st.write("Escolha o formato, adicione o seu logótipo, altere as cores e o código QR em tempo real.")
+st.write("Escolha o formato, adicione o seu logótipo, altere as cores, os textos e os seus tamanhos em tempo real.")
 
 # Divisão da página em duas colunas
 col_opcoes, col_preview = st.columns([1, 1.2])
@@ -44,12 +44,18 @@ with col_opcoes:
     st.subheader("2. Imagem / Logótipo")
     ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
 
-    # 3. Configuração dos Textos
-    st.subheader("3. Elementos de Texto")
-    # NOVO CAMPO: Texto Superior (fica por cima do outro texto)
-    texto_linha1 = st.text_input("Texto - Linha Superior (ex: Nome da Empresa):", "A MINHA MARCA", key="txt_linha1")
-    # CAMPO EXISTENTE: Texto Inferior
-    texto_linha2 = st.text_input("Texto - Linha Inferior (ex: Telefone):", "+351 900 000 000", key="txt_linha2")
+    # 3. Configuração dos Textos e Tamanhos
+    st.subheader("3. Elementos de Texto e Tamanhos")
+    
+    # Linha Superior
+    texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
+    tamanho_fonte1 = st.slider("Tamanho do texto superior:", min_value=10, max_value=40, value=18, step=1, key="size_txt1")
+    
+    st.markdown("---")
+    
+    # Linha Inferior
+    texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
+    tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=40, value=14, step=1, key="size_txt2")
 
     # 4. Configuração do Código QR
     st.subheader("4. Conteúdo do Código QR")
@@ -81,50 +87,48 @@ with col_preview:
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
         
-        # Desenhar a estrutura e definir as coordenadas dos textos
+        # Desenhar a estrutura e definir as coordenadas
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
-            canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([70, 235, 100, 265], outline=cor_texto_pc, width=4)
+            canvas.rectangle(, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse(, outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (370, 145))
             
             pos_logo_x = 240
-            pos_logo_y = 145
+            pos_logo_y = 140
             
-            # Coordenadas para empilhar os dois textos no retângulo horizontal
-            pos_txt1_x, pos_txt1_y = 240, 315  # Texto superior (Linha 1)
-            pos_txt2_x, pos_txt2_y = 240, 340  # Texto inferior (Linha 2)
+            # Coordenadas base dos textos (o ajuste fino é feito na ancoragem)
+            pos_txt1_x, pos_txt1_y = 240, 310
+            pos_txt2_x, pos_txt2_y = 240, 345
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([235, 65, 265, 95], outline=cor_texto_pc, width=4)
+            canvas.rectangle(, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse(, outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
             pos_logo_y = 110
-            
-            pos_txt1_x, pos_txt1_y = 300, 405
-            pos_txt2_x, pos_txt2_y = 300, 430
+            pos_txt1_x, pos_txt1_y = 300, 400
+            pos_txt2_x, pos_txt2_y = 300, 435
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+            canvas.ellipse(, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse(, outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
             pos_logo_y = 120
-            
-            pos_txt1_x, pos_txt1_y = 300, 405
-            pos_txt2_x, pos_txt2_y = 300, 430
+            pos_txt1_x, pos_txt1_y = 300, 400
+            pos_txt2_x, pos_txt2_y = 300, 435
 
         # Inserção do Logótipo (se existir)
         if ficheiro_logo is not None:
             try:
                 logo = Image.open(ficheiro_logo).convert("RGBA")
                 max_largura = 160 if formato == "Retangular Horizontal" else 180
-                max_altura = 90 if formato == "Retangular Horizontal" else 110
+                max_altura = 85 if formato == "Retangular Horizontal" else 100
                 logo.thumbnail((max_largura, max_altura))
                 
                 logo_final_x = pos_logo_x - (logo.width // 2)
@@ -132,16 +136,23 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # Adicionar os dois textos no canvas
+        # Carregar Fonte do Sistema para permitir redimensionamento (TrueType)
         try:
-            font = ImageFont.load_default()
-        except:
-            font = ImageFont.load_default()
+            # Fonte comum pré-instalada em servidores Linux/Streamlit Cloud
+            font1 = ImageFont.truetype("LiberationSans-Regular.ttf", tamanho_fonte1)
+            font2 = ImageFont.truetype("LiberationSans-Regular.ttf", tamanho_fonte2)
+        except IOError:
+            try:
+                font1 = ImageFont.truetype("DejaVuSans.ttf", tamanho_fonte1)
+                font2 = ImageFont.truetype("DejaVuSans.ttf", tamanho_fonte2)
+            except IOError:
+                # Fallback caso o sistema não encontre nenhuma (usa tamanho padrão)
+                font1 = ImageFont.load_default()
+                font2 = ImageFont.load_default()
             
-        # Desenha a Linha 1 (Texto de cima)
-        canvas.text((pos_txt1_x, pos_txt1_y), texto_linha1, fill=cor_texto_pc, anchor="mm")
-        # Desenha a Linha 2 (Texto de baixo)
-        canvas.text((pos_txt2_x, pos_txt2_y), texto_linha2, fill=cor_texto_pc, anchor="mm")
+        # Desenha os textos com os respetivos tamanhos escolhidos
+        canvas.text((pos_txt1_x, pos_txt1_y), texto_linha1, fill=cor_texto_pc, font=font1, anchor="mm")
+        canvas.text((pos_txt2_x, pos_txt2_y), texto_linha2, fill=cor_texto_pc, font=font2, anchor="mm")
 
         # Cortar as margens vazias para exportação
         if formato == "Retangular Horizontal":
@@ -149,7 +160,7 @@ with col_preview:
         else:
             imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-        st.image(imagem_final, caption="Design com duas linhas de texto", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+        st.image(imagem_final, caption="Design com fontes redimensionáveis", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
         # Download do design atualizado
         buf = io.BytesIO()
@@ -159,7 +170,7 @@ with col_preview:
         st.download_button(
             label="💾 Descarregar Design (PNG)",
             data=byte_im,
-            file_name=f"porta_chaves_duplo_texto.png",
+            file_name=f"porta_chaves_tamanhos.png",
             mime="image/png"
         )
     else:
