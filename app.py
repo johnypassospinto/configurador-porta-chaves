@@ -7,20 +7,24 @@ import urllib.request
 # Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
 
-# FUNÇÃO PARA DESCARREGAR UMA FONTE REAL QUE ACEITA REDIMENSIONAMENTO
+# FUNÇÃO PARA CARREGAR A FONTE DIRETAMENTE NA MEMÓRIA (SEM ESCREVER NO DISCO)
 @st.cache_data
-def carregar_fonte_web():
+def carregar_fonte_memoria():
     try:
-        # Descarrega a fonte Roboto (Google Fonts) para garantir que funciona em qualquer servidor
+        # URL da fonte Roboto (Google Fonts)
         url = "https://github.com"
-        ficheiro_fonte = "Roboto-Regular.ttf"
-        urllib.request.urlretrieve(url, ficheiro_fonte)
-        return ficheiro_fonte
+        
+        # Faz o pedido HTTP e lê os bytes da fonte diretamente
+        requisicao = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(requisicao) as resposta:
+            bytes_fonte = resposta.read()
+            
+        return bytes_fonte
     except:
         return None
 
-# Inicializar o download da fonte
-fonte_disponivel = carregar_fonte_web()
+# Guardar os bytes da fonte na sessão
+bytes_da_fonte = carregar_fonte_memoria()
 
 # FUNÇÃO PARA LIMPAR/VOLTAR AO INÍCIO
 def reiniciar_configurador():
@@ -117,8 +121,8 @@ with col_preview:
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([115, 65, 145, 95], outline=cor_texto_pc, width=4)
+            canvas.rectangle([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
@@ -128,7 +132,7 @@ with col_preview:
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
             canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
@@ -150,10 +154,11 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # Configurar a fonte descarregada dinamicamente
-        if fonte_disponivel:
-            font1 = ImageFont.truetype(fonte_disponivel, tamanho_fonte1)
-            font2 = ImageFont.truetype(fonte_disponivel, tamanho_fonte2)
+        # CONFIGURAR A FONTE A PARTIR DOS BYTES EM MEMÓRIA
+        if bytes_da_fonte:
+            # Transforma os bytes armazenados num fluxo legível para a Pillow (ImageFont)
+            font1 = ImageFont.truetype(io.BytesIO(bytes_da_fonte), tamanho_fonte1)
+            font2 = ImageFont.truetype(io.BytesIO(bytes_da_fonte), tamanho_fonte2)
         else:
             font1 = ImageFont.load_default()
             font2 = ImageFont.load_default()
@@ -183,5 +188,6 @@ with col_preview:
         )
     else:
         st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
+
 
 
