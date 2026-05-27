@@ -5,6 +5,12 @@ import io
 import base64
 import os
 
+# Importações para a geração precisa do PDF de impressão
+from reportlab.lib.pagesizes import a4
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas as pdf_canvas
+from reportlab.lib.units import cm
+
 # Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
 
@@ -25,7 +31,6 @@ def configurar_imagem_fundo():
                 background-repeat: no-repeat;
                 background-attachment: fixed;
             }}
-            /* Painéis translúcidos elegantes para leitura sobre o fundo */
             [data-testid="stHeader"], [data-testid="stSidebar"], .stMarkdown {{
                 background: rgba(255, 255, 255, 0.02) !important;
             }}
@@ -33,10 +38,8 @@ def configurar_imagem_fundo():
         """
         st.markdown(css_fundo, unsafe_allow_html=True)
 
-# Ativar o fundo personalizado na página web
 configurar_imagem_fundo()
 
-# FUNÇÃO PARA LIMPAR/VOLTAR AO INÍCIO
 def reiniciar_configurador():
     for chave in list(st.session_state.keys()):
         del st.session_state[chave]
@@ -45,18 +48,15 @@ def reiniciar_configurador():
 st.title("🎨 Personalize o seu Porta-Chaves Web")
 st.write("Altere as opções abaixo no painel lateral para construir o seu design.")
 
-# Divisão da página em duas colunas (Opções à esquerda, Pré-visualização à direita)
 col_opcoes, col_preview = st.columns([1, 1.2])
 
 with col_opcoes:
     st.header("⚙️ Opções de Personalização")
     
-    # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
-    # Definição de cores base do material
     if material == "Branco Clássico":
         cor_fundo_pc = "#FFFFFF"
         cor_texto_pc = "#000000"
@@ -67,19 +67,16 @@ with col_opcoes:
         cor_fundo_pc = "#1A1A1A"
         cor_texto_pc = "#FFFFFF"
     else:
-        cor_fundo_pc = st.color_picker("Escolha a cor de fundo do porta-chaves:", "#FFFFFF", key="cor_fundo_custom")
-        cor_texto_pc = st.color_picker("Escolha a cor do texto/linhas:", "#000000", key="cor_texto_custom")
+        cor_fundo_pc = st.color_picker("Escolha a cor de fundo:", "#FFFFFF", key="cor_fundo_custom")
+        cor_texto_pc = st.color_picker("Escolha a cor do texto:", "#000000", key="cor_texto_custom")
 
-    # 2. Upload do Logótipo
     st.subheader("2. Imagem / Logótipo")
     ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
 
-    # 3. Configuração dos Textos, Fontes e Tamanhos
     st.subheader("3. Elementos de Texto")
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
 
-    # 4. Configuração do Código QR
     st.subheader("4. Conteúdo do Código QR")
     tipo_qr = st.selectbox("O que o QR Code vai abrir?", ["Link (URL)", "Texto Secreto", "Número de Telefone"], key="tipo_qr_escolhido")
     
@@ -90,59 +87,49 @@ with col_opcoes:
     else:
         dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
 
-    # BOTÃO DE VOLTAR AO INÍCIO
     st.markdown("---")
     st.button("🔄 Voltar ao Início / Limpar Tudo", on_click=reiniciar_configurador, type="secondary")
 
-# GERAÇÃO DO DESIGN À DIREITA
+# PROCESSAMENTO DO DESIGN E DA IMPRESSÃO
 with col_preview:
     st.header("👁️ Pré-visualização")
     
-    # Define dados de contingência caso o utilizador apague os inputs
     conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
-    
     tamanho_base = (600, 500)
     porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
-    canvas = ImageDraw.Draw(porta_chaves)
+    canvas_img = ImageDraw.Draw(porta_chaves)
     
-    # Gerar o Código QR interno de forma estável
+    # Gerar Código QR estável para a imagem
     qr = qrcode.QRCode(version=1, box_size=5, border=1)
     qr.add_data(conteudo_final_qr)
     qr.make(fit=True)
     img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
     
-    # Processar o desenho e as coordenadas conforme a estrutura selecionada
     if formato == "Retangular Horizontal":
         img_qr = img_qr.resize((150, 150))
-        canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
+        canvas_img.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        canvas_img.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
         porta_chaves.paste(img_qr, (370, 145))
-        
         pos_logo_x, pos_logo_y = 240, 135
         pos_txt1_x, pos_txt1_y = 240, 295
         pos_txt2_x, pos_txt2_y = 240, 335
-        
     elif formato == "Quadrado":
         img_qr = img_qr.resize((180, 180))
-        canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
+        canvas_img.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        canvas_img.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
         porta_chaves.paste(img_qr, (210, 210))
-        
         pos_logo_x, pos_logo_y = 300, 110
         pos_txt1_x, pos_txt1_y = 300, 390
         pos_txt2_x, pos_txt2_y = 300, 430
-        
     elif formato == "Circular":
         img_qr = img_qr.resize((180, 180))
-        canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+        canvas_img.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        canvas_img.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
         porta_chaves.paste(img_qr, (210, 210))
-        
         pos_logo_x, pos_logo_y = 300, 120
         pos_txt1_x, pos_txt1_y = 300, 390
         pos_txt2_x, pos_txt2_y = 300, 430
 
-    # Inserção estável do Logótipo (se anexado)
     if ficheiro_logo is not None:
         try:
             logo = Image.open(ficheiro_logo).convert("RGBA")
@@ -154,38 +141,82 @@ with col_preview:
         except:
             pass
 
-    # Desenho nativo e limpo de texto (Espaçado) para máxima estabilidade
     font_padrao = ImageFont.load_default()
-    
-    # Converte o texto para formato espaçado (T E X T O) para manter o look arejado solicitado
     texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
     texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
     
-    # Aplica o desenho diretamente no canvas usando ancoragem padrão do Python
-    canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
-    canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+    canvas_img.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+    canvas_img.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
 
-    # Executa o Crop inteligente para remover bordas vazias antes de enviar ao ecrã
     if formato == "Retangular Horizontal":
         imagem_final = porta_chaves.crop((45, 125, 555, 375))
     else:
         imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-    # Renderiza o porta-chaves de forma fixa e imediata na página web
     st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
-    
-    # Preparação estável do botão de download
-    buf = io.BytesIO()
-    imagem_final.save(buf, format="PNG")
-    byte_im = buf.getvalue()
-    
-    st.download_button(
-        label="💾 Descarregar Design (PNG)",
-        data=byte_im,
-        file_name="porta_chaves_final.png",
-        mime="image/png"
-    )
 
+    # --- GERADOR DE PDF DE IMPRESSÃO EM CENTÍMETROS REAIS ---
+    def gerar_pdf_impressao():
+        buffer_pdf = io.BytesIO()
+        p_pdf = pdf_canvas.Canvas(buffer_pdf, pagesize=a4)
+        
+        # Guardar a imagem recortada temporariamente para embutir no PDF
+        img_buffer = io.BytesIO()
+        imagem_final.save(img_buffer, format="PNG")
+        img_buffer.seek(0)
+        
+        # Definição do tamanho físico real em centímetros na folha A4
+        if formato == "Retangular Horizontal":
+            largura_real = 6.0 * cm
+            altura_real = 3.2 * cm
+        elif formato == "Quadrado":
+            largura_real = 4.5 * cm
+            altura_real = 4.5 * cm
+        else: # Circular
+            largura_real = 4.5 * cm
+            altura_real = 4.5 * cm
+
+        # Posicionar o desenho centralizado no topo de uma folha A4 limpa
+        pos_x = (21.0 * cm - largura_real) / 2
+        pos_y = 22.0 * cm
+        
+        # Desenha marcas de corte cruzadas cinzentas à volta do porta-chaves para facilitar o corte manual
+        p_pdf.setStrokeColor(colors.lightgrey)
+        p_pdf.setLineWidth(0.5)
+        # Linhas verticais de corte
+        p_pdf.line(pos_x, pos_y - 0.5*cm, pos_x, pos_y + altura_real + 0.5*cm)
+        p_pdf.line(pos_x + largura_real, pos_y - 0.5*cm, pos_x + largura_real, pos_y + altura_real + 0.5*cm)
+        # Linhas horizontais de corte
+        p_pdf.line(pos_x - 0.5*cm, pos_y, pos_x + largura_real + 0.5*cm, pos_y)
+        p_pdf.line(pos_x - 0.5*cm, pos_y + altura_real, pos_x + largura_real + 0.5*cm, pos_y + altura_real)
+
+        # Desenhar a imagem do design com as dimensões métricas exatas
+        p_pdf.drawImage(pdf_canvas.ImageReader(img_buffer), pos_x, pos_y, width=largura_real, height=altura_real)
+        
+        # Texto de instrução no fundo do PDF (não afeta o desenho)
+        p_pdf.setFont("Helvetica", 10)
+        p_pdf.setFillColor(colors.gray)
+        p_pdf.drawCentredString(21.0*cm / 2, 4.0*cm, "Instruções: Imprima em tamanho real (Escala 100%). Corte pelas linhas guia.")
+        
+        p_pdf.showPage()
+        p_pdf.save()
+        buffer_pdf.seek(0)
+        return buffer_pdf.getvalue()
+
+    st.markdown("---")
+    st.subheader("🖨️ Opções de Exportação e Impressão")
+    
+    # Gerar os dados binários do PDF
+    pdf_data = gerar_pdf_impressao()
+    
+    # Botão de download exclusivo para impressão limpa
+    st.download_button(
+        label="📄 Descarregar PDF Pronto para Imprimir (Tamanho Real)",
+        data=pdf_data,
+        file_name=f"impressao_porta_chaves_{formato.lower().replace(' ', '_')}.pdf",
+        mime="application/pdf",
+        type="primary"
+    )
 
 
 
