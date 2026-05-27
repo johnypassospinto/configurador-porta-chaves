@@ -89,46 +89,46 @@ with col_preview:
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
         
-        # Desenhar a estrutura e definir as coordenadas
+        # Desenhar a estrutura e definir as coordenadas (Afastadas para dar mais espaço)
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
             canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([70, 235, 95, 260], outline=cor_texto_pc, width=4)
+            canvas.ellipse([70, 235, 100, 265], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (370, 145))
             
             pos_logo_x = 240
-            pos_logo_y = 140
-            pos_txt1_x, pos_txt1_y = 240, 300
-            pos_txt2_x, pos_txt2_y = 240, 335
+            pos_logo_y = 135
+            pos_txt1_x, pos_txt1_y = 240, 295  # Ajustado verticalmente para respirar
+            pos_txt2_x, pos_txt2_y = 240, 340  # Mais espaço entre as linhas
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([120, 70, 145, 95], outline=cor_texto_pc, width=4)
+            canvas.rectangle([100, 100, 500, 500], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([120, 120, 150, 150], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
             pos_logo_y = 110
             pos_txt1_x, pos_txt1_y = 300, 390
-            pos_txt2_x, pos_txt2_y = 300, 425
+            pos_txt2_x, pos_txt2_y = 300, 435
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([285, 65, 310, 90], outline=cor_texto_pc, width=4)
+            canvas.ellipse([100, 100, 500, 500], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([285, 110, 315, 140], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
             pos_logo_y = 120
             pos_txt1_x, pos_txt1_y = 300, 390
-            pos_txt2_x, pos_txt2_y = 300, 425
+            pos_txt2_x, pos_txt2_y = 300, 435
 
         # Inserção do Logótipo (se existir)
         if ficheiro_logo is not None:
             try:
                 logo = Image.open(ficheiro_logo).convert("RGBA")
                 max_largura = 160 if formato == "Retangular Horizontal" else 180
-                max_altura = 85 if formato == "Retangular Horizontal" else 100
+                max_altura = 80 if formato == "Retangular Horizontal" else 95
                 logo.thumbnail((max_largura, max_altura))
                 
                 logo_final_x = pos_logo_x - (logo.width // 2)
@@ -136,49 +136,53 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # FUNÇÃO INTERNA PARA DESENHAR TEXTOS COM ESTILOS E TAMANHOS VARIÁVEIS SEM ERROS
-        def desenhar_texto_estilizado(draw_canvas, texto, coordenadas, cor, estilo, tamanho):
+        # FUNÇÃO MELHORADA PARA DESENHAR TEXTOS MAIS ESPAÇOSOS (KERNING ALTERADO)
+        def desenho_texto_espacoso(draw_canvas, texto, coordenadas, cor, estilo, tamanho):
             x, y = coordenadas
-            # Criar uma imagem temporária grande para desenhar o texto nítido
-            img_txt = Image.new("RGBA", (800, 100), (0, 0, 0, 0))
+            
+            # ADICIONAR ESPAÇAMENTO ENTRE AS LETRAS (Transforma "MARCA" em "M A R C A")
+            # Adiciona um espaço extra entre cada caractere para um look premium e arejado
+            texto_espacado = " ".join(list(texto))
+            
+            # Criar tela transparente para o texto esticado
+            img_txt = Image.new("RGBA", (1200, 100), (0, 0, 0, 0))
             draw_txt = ImageDraw.Draw(img_txt)
             
-            # Escolha de fontes de sistema limpas que respondem bem à escala
             try:
                 fnt = ImageFont.load_default()
             except:
                 fnt = ImageFont.load_default()
             
-            # Desenha o texto base
-            draw_txt.text((10, 10), texto, fill=cor, font=fnt)
+            # Desenha o texto já espaçado
+            draw_txt.text((10, 10), texto_espacado, fill=cor, font=fnt)
             
-            # Aplica o estilo gráfico com base no seletor
+            # Aplicação dos Estilos gráficos
             if estilo == "Negrito Forte":
-                # Efeito Bold por sobreposição de camadas
-                draw_txt.text((11, 10), texto, fill=cor, font=fnt)
-                draw_txt.text((10, 11), texto, fill=cor, font=fnt)
+                draw_txt.text((11, 10), texto_espacado, fill=cor, font=fnt)
+                draw_txt.text((10, 11), texto_espacado, fill=cor, font=fnt)
             elif estilo == "Efeito Itálico":
-                # Inclina a imagem do texto para simular o itálico
                 img_txt = img_txt.transform(img_txt.size, Image.AFFINE, (1, -0.2, 0, 0, 1, 0), Image.BICUBIC)
             
-            # Redimensiona o texto com base no slider (Controlo Real de Tamanho)
-            largura_original, altura_original = 100, 25
+            # Ajuste dinâmico de escala baseado no Slider
+            largura_base = len(texto_espacado) * 7
+            altura_base = 25
             proporcao = tamanho / 14.0
-            nova_largura = int(largura_original * proporcao)
-            nova_altura = int(altura_original * proporcao)
+            nova_largura = int(largura_base * proporcao)
+            nova_altura = int(altura_base * proporcao)
             
-            # Corta a caixa de texto útil e redimensiona com alta qualidade
-            caixa_texto = img_txt.crop((8, 8, 300, 40))
-            caixa_texto = caixa_texto.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
-            
-            # Cola o texto final na posição certa com alinhamento centralizado (mm)
-            px = x - (caixa_texto.width // 2)
-            py = y - (caixa_texto.height // 2)
-            porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
+            # Garante que as dimensões são válidas antes do crop/resize
+            if nova_largura > 0 and nova_altura > 0:
+                caixa_texto = img_txt.crop((8, 8, int(largura_base + 15), 40))
+                caixa_texto = caixa_texto.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
+                
+                # Centralização perfeita
+                px = x - (caixa_texto.width // 2)
+                py = y - (caixa_texto.height // 2)
+                porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
 
-        # Desenhar os dois textos aplicando os Estilos e Tamanhos em tempo real
-        desenhar_texto_estilizado(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, estilo_fonte1, tamanho_fonte1)
-        desenhar_texto_estilizado(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, estilo_fonte2, tamanho_fonte2)
+        # Desenhar as duas linhas com o novo espaçamento elegante entre caracteres
+        desenho_texto_espacoso(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, estilo_fonte1, tamanho_fonte1)
+        desenho_texto_espacoso(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, estilo_fonte2, tamanho_fonte2)
 
         # Cortar as margens vazias para exportação
         if formato == "Retangular Horizontal":
@@ -186,9 +190,9 @@ with col_preview:
         else:
             imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-        st.image(imagem_final, caption="Design pronto com Estilos e Tamanhos aplicados", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+        st.image(imagem_final, caption="Design arejado com maior espaçamento", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
-        # Preparar dados para o download
+        # Download do design atualizado
         buf = io.BytesIO()
         imagem_final.save(buf, format="PNG")
         byte_im = buf.getvalue()
@@ -196,11 +200,12 @@ with col_preview:
         st.download_button(
             label="💾 Descarregar Design (PNG)",
             data=byte_im,
-            file_name="porta_chaves_final.png",
+            file_name="porta_chaves_espacoso.png",
             mime="image/png"
         )
     else:
         st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
+
 
 
 
