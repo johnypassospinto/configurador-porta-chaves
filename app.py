@@ -175,6 +175,3 @@ with col_preview:
         )
     else:
         st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
-
-
-
