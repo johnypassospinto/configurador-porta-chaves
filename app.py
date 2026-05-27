@@ -5,6 +5,12 @@ import io
 import base64
 import os
 
+# Novas importações para gerar o PDF métrico exato
+from reportlab.lib.pagesizes import a4
+from reportlab.lib import colors
+from reportlab.pdfgen import canvas as pdf_canvas
+from reportlab.lib.units import cm
+
 # Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
 
@@ -174,14 +180,51 @@ with col_preview:
     # Renderiza o porta-chaves de forma fixa e imediata na página web
     st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
     
-    # Preparação estável do botão de download
-    buf = io.BytesIO()
-    imagem_final.save(buf, format="PNG")
-    byte_im = buf.getvalue()
+    # --- NOVO BLOCO: GERADOR DE PDF DE IMPRESSÃO EM CENTÍMETROS REAIS ---
+    def gerar_pdf_impressao():
+        buffer_pdf = io.BytesIO()
+        p_pdf = pdf_canvas.Canvas(buffer_pdf, pagesize=a4)
+        
+        # Guarda o recorte PNG em memória para injetar no PDF
+        img_buffer = io.BytesIO()
+        imagem_final.save(img_buffer, format="PNG")
+        img_buffer.seek(0)
+        
+        # Define o tamanho físico real que o porta-chaves terá no papel
+        if formato == "Retangular Horizontal":
+            largura_real = 6.0 * cm
+            altura_real = 3.2 * cm
+        else: # Quadrado ou Circular
+            largura_real = 4.5 * cm
+            altura_real = 4.5 * cm
+
+        # Coordenadas para centrar o desenho numa folha A4 limpa
+        pos_x = (21.0 * cm - largura_real) / 2
+        pos_y = 22.0 * cm
+        
+        # Desenha marcas de corte finas à volta para guiar a tesoura
+        p_pdf.setStrokeColor(colors.lightgrey)
+        p_pdf.setLineWidth(0.5)
+        p_pdf.line(pos_x, pos_y - 0.5*cm, pos_x, pos_y + altura_real + 0.5*cm)
+        p_pdf.line(pos_x + largura_real, pos_y - 0.5*cm, pos_x + largura_real, pos_y + altura_real + 0.5*cm)
+        p_pdf.line(pos_x - 0.5*cm, pos_y, pos_x + largura_real + 0.5*cm, pos_y)
+        p_pdf.line(pos_x - 0.5*cm, pos_y + altura_real, pos_x + largura_real + 0.5*cm, pos_y + altura_real)
+
+        # Injeta o desenho recortado com as medidas exatas em cm
+        p_pdf.drawImage(pdf_canvas.ImageReader(img_buffer), pos_x, pos_y, width=largura_real, height=altura_real)
+        
+        # Rodapé com instruções úteis de impressão
+        p_pdf.setFont("Helvetica", 10)
+        p_pdf.setFillColor(colors.gray)
+        p_pdf.drawCentredString(21.0*cm / 2, 4.0*cm, "Instruções de Impressão: Imprima em tamanho real (Escala 100%). Recorte pelas linhas guia.")
+        
+        p_pdf.showPage()
+        p_pdf.save()
+        buffer_pdf.seek(0)
+        return buffer_pdf.getvalue()
+
+    st.markdown("---")
+    st.subheader("🖨️ Opções de Exportação e Impressão")
     
-    st.download_button(
-        label="💾 Descarregar Design (PNG)",
-        data=byte_im,
-        file_name="porta_chaves_final.png",
-        mime="image/png"
-    )
+    # Criar duas colunas para os botões de descarregar
+
