@@ -14,10 +14,8 @@ def configurar_imagem_fundo():
     if os.path.exists(nome_ficheiro):
         with open(nome_ficheiro, "rb") as f:
             dados_imagem = f.read()
-        # Converte os bytes da imagem para string base64
         base64_imagem = base64.b64encode(dados_imagem).decode()
         
-        # Injeta o CSS para aplicar a imagem em ecrã inteiro de forma responsiva
         css_fundo = f"""
         <style>
             .stApp {{
@@ -27,7 +25,6 @@ def configurar_imagem_fundo():
                 background-repeat: no-repeat;
                 background-attachment: fixed;
             }}
-            /* Torna os painéis ligeiramente translúcidos para melhor leitura sobre o fundo */
             [data-testid="stHeader"], [data-testid="stSidebar"] {{
                 background: rgba(255, 255, 255, 0.05) !important;
             }}
@@ -114,8 +111,9 @@ with col_preview:
     
     if dados_qr and dados_qr not in ["https://", "+351", ""]:
         tamanho_base = (600, 500)
-        # O fundo da mesa de trabalho fica transparente para se fundir com a imagem do site
-        porta_chaves = Image.new("RGBA", tamanho_base, (0, 0, 0, 0))
+        # [CORREÇÃO] Voltámos a usar o formato RGB estável com um fundo cinzento suave 
+        # para que o navegador consiga processar e mostrar a imagem perfeitamente
+        porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
         canvas = ImageDraw.Draw(porta_chaves)
         
         # Gerar o Código QR interno
@@ -211,10 +209,12 @@ with col_preview:
             
             if nova_largura > 0 and nova_altura > 0:
                 caixa_texto = img_txt.crop((8, 8, int(largura_base + 15), 40))
-                caixa_texto = caixa_texto.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
+                caixa_texto = caja_texto = caixa_texto.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
                 
                 px = x - (caixa_texto.width // 2)
                 py = y - (caixa_texto.height // 2)
+                porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
+
 
 
 
