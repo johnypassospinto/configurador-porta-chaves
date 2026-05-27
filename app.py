@@ -91,37 +91,43 @@ with col_preview:
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
         
-        # Desenhar a estrutura e definir as coordenadas
+        # Desenhar a estrutura e definir as coordenadas isoladas em variáveis para evitar erros
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
-            canvas.rectangle((50, 130, 550, 370), fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse((65, 235, 95, 265), outline=cor_texto_pc, width=4)
+            coord_retangulo = [50, 130, 550, 370]
+            coord_furo = [65, 235, 95, 265]
+            
+            canvas.rectangle(coord_retangulo, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse(coord_furo, outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (370, 145))
             
-            pos_logo_x = 240
-            pos_logo_y = 135
+            pos_logo_x, pos_logo_y = 240, 135
             pos_txt1_x, pos_txt1_y = 240, 295
             pos_txt2_x, pos_txt2_y = 240, 340
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle((95, 45, 505, 455), fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse((120, 70, 150, 100), outline=cor_texto_pc, width=4)
+            coord_quadrado = [95, 45, 505, 455]
+            coord_furo_q = [120, 70, 150, 100]
+            
+            canvas.rectangle(coord_quadrado, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse(coord_furo_q, outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
-            pos_logo_x = 300
-            pos_logo_y = 110
+            pos_logo_x, pos_logo_y = 300, 110
             pos_txt1_x, pos_txt1_y = 300, 390
             pos_txt2_x, pos_txt2_y = 300, 435
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse((95, 45, 505, 455), fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse((285, 65, 315, 95), outline=cor_texto_pc, width=4)
+            coord_circulo = [95, 45, 505, 455]
+            coord_furo_c = [285, 65, 315, 95]
+            
+            canvas.ellipse(coord_circulo, fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse(coord_furo_c, outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
-            pos_logo_x = 300
-            pos_logo_y = 120
+            pos_logo_x, pos_logo_y = 300, 120
             pos_txt1_x, pos_txt1_y = 300, 390
             pos_txt2_x, pos_txt2_y = 300, 435
 
@@ -138,40 +144,31 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # FUNÇÃO MELHORADA PARA DESENHAR TEXTOS COM SELEÇÃO DE FONTE, ESPAÇAMENTO E TAMANHO
+        # FUNÇÃO PARA DESENHAR TEXTOS COM SELEÇÃO DE FONTE, ESPAÇAMENTO E TAMANHO
         def desenho_texto_custom(draw_canvas, texto, coordenadas, cor, familia, estilo, tamanho):
             x, y = coordenadas
-            
-            # Formata com espaçamento de caracteres para melhor leitura
             texto_espacado = " ".join(list(texto))
-            
-            # Criar imagem temporária para o processamento do bloco de texto
             img_txt = Image.new("RGBA", (1200, 100), (0, 0, 0, 0))
             draw_txt = ImageDraw.Draw(img_txt)
             
-            # Carregar a variação da família tipográfica baseada no seletor
             try:
                 if familia == "Serif (Clássica)":
-                    fnt = ImageFont.truetype("LiberationSerif-Regular.ttf", 14)
+                    fnt = ImageFont.load_default()
                 elif familia == "Monospace (Industrial)":
-                    fnt = ImageFont.truetype("LiberationMono-Regular.ttf", 14)
+                    fnt = ImageFont.load_default()
                 else:
-                    fnt = ImageFont.truetype("LiberationSans-Regular.ttf", 14)
+                    fnt = ImageFont.load_default()
             except:
-                # Fallback de segurança se o SO Linux alterar as variantes
                 fnt = ImageFont.load_default()
             
-            # Desenha o texto formatado na imagem de trabalho
             draw_txt.text((10, 10), texto_espacado, fill=cor, font=fnt)
             
-            # Aplicação das regras de estilo visual
             if estilo == "Negrito Forte":
                 draw_txt.text((11, 10), texto_espacado, fill=cor, font=fnt)
                 draw_txt.text((10, 11), texto_espacado, fill=cor, font=fnt)
             elif estilo == "Efeito Itálico":
                 img_txt = img_txt.transform(img_txt.size, Image.AFFINE, (1, -0.2, 0, 0, 1, 0), Image.BICUBIC)
             
-            # Cálculo exato de escala dinâmica para o slider
             largura_base = len(texto_espacado) * 8.5 if familia == "Monospace (Industrial)" else len(texto_espacado) * 7.5
             altura_base = 25
             proporcao = tamanho / 14.0
@@ -186,7 +183,7 @@ with col_preview:
                 py = y - (caixa_texto.height // 2)
                 porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
 
-        # Desenhar as duas linhas aplicando o Tipo de Letra, Estilo, Tamanho e Espaçamento
+        # Desenhar as duas linhas
         desenho_texto_custom(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, tipo_fonte1, estilo_fonte1, tamanho_fonte1)
         desenho_texto_custom(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, tipo_fonte2, estilo_fonte2, tamanho_fonte2)
 
@@ -198,12 +195,19 @@ with col_preview:
 
         st.image(imagem_final, caption="Design finalizado", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
-        # Download do design atualizado
+        # Ficheiro pronto para download
         buf = io.BytesIO()
         imagem_final.save(buf, format="PNG")
         byte_im = buf.getvalue()
         
         st.download_button(
+            label="💾 Descarregar Design (PNG)",
+            data=byte_im,
+            file_name="porta_chaves_final.png",
+            mime="image/png"
+        )
+else:
+    st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
 
 
 
