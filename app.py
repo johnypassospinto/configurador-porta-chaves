@@ -80,6 +80,7 @@ with col_opcoes:
 with col_preview:
     st.header("👁️ Pré-visualização")
     
+    # Verifica se existem dados válidos preenchidos
     if dados_qr and dados_qr not in ["https://", "+351", ""]:
         tamanho_base = (600, 500)
         porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
@@ -91,7 +92,7 @@ with col_preview:
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
         
-        # Desenhar a estrutura e definir as coordenadas isoladas em variáveis para evitar erros
+        # Definir as coordenadas das formas geométricas
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
             coord_retangulo = [50, 130, 550, 370]
@@ -144,31 +145,39 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # FUNÇÃO PARA DESENHAR TEXTOS COM SELEÇÃO DE FONTE, ESPAÇAMENTO E TAMANHO
+        # FUNÇÃO PARA DESENHAR TEXTOS COM SIMULAÇÃO REAL DE FONTES (SANS, SERIF, MONO)
         def desenho_texto_custom(draw_canvas, texto, coordenadas, cor, familia, estilo, tamanho):
             x, y = coordenadas
             texto_espacado = " ".join(list(texto))
+            
+            # Criar tela auxiliar transparente
             img_txt = Image.new("RGBA", (1200, 100), (0, 0, 0, 0))
             draw_txt = ImageDraw.Draw(img_txt)
             
+            # Atribuição estável de caminhos de fontes nativas do Linux (Streamlit Cloud)
+            # Isto garante que a troca de fontes funciona e altera o aspeto visual
+            nome_fonte = "LiberationSans-Regular.ttf"
+            if familia == "Serif (Clássica)":
+                nome_fonte = "LiberationSerif-Regular.ttf"
+            elif familia == "Monospace (Industrial)":
+                nome_fonte = "LiberationMono-Regular.ttf"
+                
             try:
-                if familia == "Serif (Clássica)":
-                    fnt = ImageFont.load_default()
-                elif familia == "Monospace (Industrial)":
-                    fnt = ImageFont.load_default()
-                else:
-                    fnt = ImageFont.load_default()
+                fnt = ImageFont.truetype(nome_fonte, 14)
             except:
                 fnt = ImageFont.load_default()
             
+            # Desenha o texto base
             draw_txt.text((10, 10), texto_espacado, fill=cor, font=fnt)
             
+            # Aplicação dos estilos
             if estilo == "Negrito Forte":
                 draw_txt.text((11, 10), texto_espacado, fill=cor, font=fnt)
                 draw_txt.text((10, 11), texto_espacado, fill=cor, font=fnt)
             elif estilo == "Efeito Itálico":
                 img_txt = img_txt.transform(img_txt.size, Image.AFFINE, (1, -0.2, 0, 0, 1, 0), Image.BICUBIC)
             
+            # Redimensionamento vetorial para obedecer ao tamanho do Slider
             largura_base = len(texto_espacado) * 8.5 if familia == "Monospace (Industrial)" else len(texto_espacado) * 7.5
             altura_base = 25
             proporcao = tamanho / 14.0
@@ -183,11 +192,11 @@ with col_preview:
                 py = y - (caixa_texto.height // 2)
                 porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
 
-        # Desenhar as duas linhas
+        # Desenhar as duas linhas na imagem
         desenho_texto_custom(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, tipo_fonte1, estilo_fonte1, tamanho_fonte1)
         desenho_texto_custom(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, tipo_fonte2, estilo_fonte2, tamanho_fonte2)
 
-        # Cortar as margens vazias para exportação
+        # Cortar as margens para exportação
         if formato == "Retangular Horizontal":
             imagem_final = porta_chaves.crop((45, 125, 555, 375))
         else:
@@ -195,19 +204,8 @@ with col_preview:
 
         st.image(imagem_final, caption="Design finalizado", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
-        # Ficheiro pronto para download
+        # Preparação do download do ficheiro
         buf = io.BytesIO()
-        imagem_final.save(buf, format="PNG")
-        byte_im = buf.getvalue()
-        
-        st.download_button(
-            label="💾 Descarregar Design (PNG)",
-            data=byte_im,
-            file_name="porta_chaves_final.png",
-            mime="image/png"
-        )
-else:
-    st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
 
 
 
