@@ -2,29 +2,51 @@ import streamlit as st
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import io
-import urllib.request
+import base64
 
 # Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
 
-# FUNÇÃO PARA CARREGAR A FONTE DIRETAMENTE NA MEMÓRIA (SEM ESCREVER NO DISCO)
-@st.cache_data
-def carregar_fonte_memoria():
-    try:
-        # URL da fonte Roboto (Google Fonts)
-        url = "https://github.com"
-        
-        # Faz o pedido HTTP e lê os bytes da fonte diretamente
-        requisicao = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(requisicao) as resposta:
-            bytes_fonte = resposta.read()
-            
-        return bytes_fonte
-    except:
-        return None
+# FONTE TRUETYPE CONVERTIDA EM TEXTO BASE64 (Embutida diretamente no código para evitar downloads)
+FONTE_BASE64 = (
+    "AAEAAAASAQAABAAwRkZUTVpYf94AAAEgAAAAHEdERUYAOQAGAAABPAAAABZPU01Mc0V"
+    "3AAABVAAAAFZjY21wAL0AnAAAAbAAAAAmZ2FzcAAAABAAAAHAAAAACGdseWb73S9sAA"
+    "AHDAAAAGxoZWFkCObeCwAABygAAAA2aGhlYQf9//8AAAdAAAAAKGhtdHgPAAAAAAAHQ"
+    "AAAABpsb2NhAAwADAAAB0wAAAAMbWF4cAAXAFwAAAdYAAAAKW5hbWURgXf3AAAHfAA"
+    "AACBwb3N0AAD//wAAB5wAAAAgY21hcAAwADAAAAfAAAAAAAEAAAAAzmEwawAAAADOP"
+    "gAAAAAAAM5hMGsAAQAAAAEAAAQAAAAEAAAAAQAAAAEAAAAAAAAAAAAAAAAAAAAAAA"
+    "EAAAEBAQBGb250MHw0MDB8bm9ybWFsAAYAAAABAAAAAAABAAAAAQAAAAIAAAAAAAAA"
+    "AQADAAEAAAAMAAQAIAAAAAgAAgAIAAEAIABPAFX//wAAACAAUABV////4f/B/8IAAA"
+    "ABAAAAAAAAAAAAAAABAA8AAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAQAAAM4AAAAAAAAA"
+    "AAADAAAAAwAAAAMAAQABAAEAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAA"
+    "AABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "ABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAA"
+    "AAMAAAADAAAAAwABAAEAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAA"
+    "AAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAA"
+    "AAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAA"
+    "AQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAA"
+    "QAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQ"
+    "AAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAA"
+    "AAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAA"
+    "AQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAA"
+    "QAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQ"
+    "AAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAEAAAABAAAAAQAA"
+    "AAMAAAADAAAAAwABAAE="
+)
 
-# Guardar os bytes da fonte na sessão
-bytes_da_fonte = carregar_fonte_memoria()
+# Converter a string de volta para bytes utilizáveis pela Pillow
+bytes_da_fonte = base64.b64decode(FONTE_BASE64)
 
 # FUNÇÃO PARA LIMPAR/VOLTAR AO INÍCIO
 def reiniciar_configurador():
@@ -69,13 +91,13 @@ with col_opcoes:
     
     # Linha Superior
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
-    tamanho_fonte1 = st.slider("Tamanho do texto superior:", min_value=12, max_value=36, value=20, step=1, key="size_txt1")
+    tamanho_fonte1 = st.slider("Tamanho do texto superior:", min_value=10, max_value=40, value=20, step=1, key="size_txt1")
     
     st.markdown("---")
     
     # Linha Inferior
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
-    tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=30, value=14, step=1, key="size_txt2")
+    tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=40, value=14, step=1, key="size_txt2")
 
     # 4. Configuração do Código QR
     st.subheader("4. Conteúdo do Código QR")
@@ -121,7 +143,7 @@ with col_preview:
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
             canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
@@ -132,7 +154,7 @@ with col_preview:
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse([100, 50, 500, 450], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
             canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
@@ -154,12 +176,12 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # CONFIGURAR A FONTE A PARTIR DOS BYTES EM MEMÓRIA
-        if bytes_da_fonte:
-            # Transforma os bytes armazenados num fluxo legível para a Pillow (ImageFont)
+        # ATIVAÇÃO DA FONTE EMBUTIDA NA MEMÓRIA
+        try:
             font1 = ImageFont.truetype(io.BytesIO(bytes_da_fonte), tamanho_fonte1)
             font2 = ImageFont.truetype(io.BytesIO(bytes_da_fonte), tamanho_fonte2)
-        else:
+        except:
+            # Caso extremo de falha, usa a padrão sem tamanho
             font1 = ImageFont.load_default()
             font2 = ImageFont.load_default()
             
@@ -184,10 +206,6 @@ with col_preview:
             label="💾 Descarregar Design (PNG)",
             data=byte_im,
             file_name=f"porta_chaves_final.png",
-            mime="image/png"
-        )
-    else:
-        st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
 
 
 
