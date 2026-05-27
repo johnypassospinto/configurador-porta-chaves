@@ -13,7 +13,7 @@ def reiniciar_configurador():
     st.rerun()
 
 st.title("🎨 Personalize o seu Porta-Chaves Web")
-st.write("Escolha o formato, adicione o seu logótipo, altere as cores, os tipos de letra e os seus tamanhos em tempo real.")
+st.write("Escolha o formato, adicione o seu logótipo, altere as cores, tipos e estilos de letra em tempo real.")
 
 # Divisão da página em duas colunas
 col_opcoes, col_preview = st.columns([1, 1.2])
@@ -44,19 +44,21 @@ with col_opcoes:
     st.subheader("2. Imagem / Logótipo")
     ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
 
-    # 3. Configuração dos Textos, Estilos e Tamanhos
+    # 3. Configuração dos Textos, Fontes e Tamanhos
     st.subheader("3. Elementos de Texto e Estilos")
     
     # Linha Superior
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
-    estilo_fonte1 = st.selectbox("Estilo do texto superior:", ["Padrão Limpo", "Negrito Forte", "Efeito Itálico"], key="style_txt1")
+    tipo_fonte1 = st.selectbox("Tipo de Letra Superior:", ["Sans-Serif (Moderna)", "Serif (Clássica)", "Monospace (Industrial)"], key="tipo_fnt1")
+    estilo_fonte1 = st.selectbox("Estilo da linha superior:", ["Padrão Limpo", "Negrito Forte", "Efeito Itálico"], key="style_txt1")
     tamanho_fonte1 = st.slider("Tamanho do texto superior:", min_value=12, max_value=32, value=18, step=2, key="size_txt1")
     
     st.markdown("---")
     
     # Linha Inferior
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
-    estilo_fonte2 = st.selectbox("Estilo do texto inferior:", ["Padrão Limpo", "Negrito Forte", "Efeito Itálico"], key="style_txt2")
+    tipo_fonte2 = st.selectbox("Tipo de Letra Inferior:", ["Sans-Serif (Moderna)", "Serif (Clássica)", "Monospace (Industrial)"], key="tipo_fnt2")
+    estilo_fonte2 = st.selectbox("Estilo da linha inferior:", ["Padrão Limpo", "Negrito Forte", "Efeito Itálico"], key="style_txt2")
     tamanho_fonte2 = st.slider("Tamanho do texto inferior:", min_value=10, max_value=26, value=14, step=2, key="size_txt2")
 
     # 4. Configuração do Código QR
@@ -89,22 +91,22 @@ with col_preview:
         qr.make(fit=True)
         img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
         
-        # Desenhar a estrutura e definir as coordenadas (Afastadas para dar mais espaço)
+        # Desenhar a estrutura e definir as coordenadas
         if formato == "Retangular Horizontal":
             img_qr = img_qr.resize((150, 150))
-            canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([70, 235, 100, 265], outline=cor_texto_pc, width=4)
+            canvas.rectangle((50, 130, 550, 370), fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse((65, 235, 95, 265), outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (370, 145))
             
             pos_logo_x = 240
             pos_logo_y = 135
-            pos_txt1_x, pos_txt1_y = 240, 295  # Ajustado verticalmente para respirar
-            pos_txt2_x, pos_txt2_y = 240, 340  # Mais espaço entre as linhas
+            pos_txt1_x, pos_txt1_y = 240, 295
+            pos_txt2_x, pos_txt2_y = 240, 340
             
         elif formato == "Quadrado":
             img_qr = img_qr.resize((180, 180))
-            canvas.rectangle([100, 100, 500, 500], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([120, 120, 150, 150], outline=cor_texto_pc, width=4)
+            canvas.rectangle((95, 45, 505, 455), fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse((120, 70, 150, 100), outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
@@ -114,8 +116,8 @@ with col_preview:
             
         elif formato == "Circular":
             img_qr = img_qr.resize((180, 180))
-            canvas.ellipse([100, 100, 500, 500], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-            canvas.ellipse([285, 110, 315, 140], outline=cor_texto_pc, width=4)
+            canvas.ellipse((95, 45, 505, 455), fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+            canvas.ellipse((285, 65, 315, 95), outline=cor_texto_pc, width=4)
             porta_chaves.paste(img_qr, (210, 210))
             
             pos_logo_x = 300
@@ -136,53 +138,57 @@ with col_preview:
             except:
                 st.error("Erro ao carregar logótipo.")
 
-        # FUNÇÃO MELHORADA PARA DESENHAR TEXTOS MAIS ESPAÇOSOS (KERNING ALTERADO)
-        def desenho_texto_espacoso(draw_canvas, texto, coordenadas, cor, estilo, tamanho):
+        # FUNÇÃO MELHORADA PARA DESENHAR TEXTOS COM SELEÇÃO DE FONTE, ESPAÇAMENTO E TAMANHO
+        def desenho_texto_custom(draw_canvas, texto, coordenadas, cor, familia, estilo, tamanho):
             x, y = coordenadas
             
-            # ADICIONAR ESPAÇAMENTO ENTRE AS LETRAS (Transforma "MARCA" em "M A R C A")
-            # Adiciona um espaço extra entre cada caractere para um look premium e arejado
+            # Formata com espaçamento de caracteres para melhor leitura
             texto_espacado = " ".join(list(texto))
             
-            # Criar tela transparente para o texto esticado
+            # Criar imagem temporária para o processamento do bloco de texto
             img_txt = Image.new("RGBA", (1200, 100), (0, 0, 0, 0))
             draw_txt = ImageDraw.Draw(img_txt)
             
+            # Carregar a variação da família tipográfica baseada no seletor
             try:
-                fnt = ImageFont.load_default()
+                if familia == "Serif (Clássica)":
+                    fnt = ImageFont.truetype("LiberationSerif-Regular.ttf", 14)
+                elif familia == "Monospace (Industrial)":
+                    fnt = ImageFont.truetype("LiberationMono-Regular.ttf", 14)
+                else:
+                    fnt = ImageFont.truetype("LiberationSans-Regular.ttf", 14)
             except:
+                # Fallback de segurança se o SO Linux alterar as variantes
                 fnt = ImageFont.load_default()
             
-            # Desenha o texto já espaçado
+            # Desenha o texto formatado na imagem de trabalho
             draw_txt.text((10, 10), texto_espacado, fill=cor, font=fnt)
             
-            # Aplicação dos Estilos gráficos
+            # Aplicação das regras de estilo visual
             if estilo == "Negrito Forte":
                 draw_txt.text((11, 10), texto_espacado, fill=cor, font=fnt)
                 draw_txt.text((10, 11), texto_espacado, fill=cor, font=fnt)
             elif estilo == "Efeito Itálico":
                 img_txt = img_txt.transform(img_txt.size, Image.AFFINE, (1, -0.2, 0, 0, 1, 0), Image.BICUBIC)
             
-            # Ajuste dinâmico de escala baseado no Slider
-            largura_base = len(texto_espacado) * 7
+            # Cálculo exato de escala dinâmica para o slider
+            largura_base = len(texto_espacado) * 8.5 if familia == "Monospace (Industrial)" else len(texto_espacado) * 7.5
             altura_base = 25
             proporcao = tamanho / 14.0
             nova_largura = int(largura_base * proporcao)
             nova_altura = int(altura_base * proporcao)
             
-            # Garante que as dimensões são válidas antes do crop/resize
             if nova_largura > 0 and nova_altura > 0:
                 caixa_texto = img_txt.crop((8, 8, int(largura_base + 15), 40))
                 caixa_texto = caixa_texto.resize((nova_largura, nova_altura), Image.Resampling.LANCZOS)
                 
-                # Centralização perfeita
                 px = x - (caixa_texto.width // 2)
                 py = y - (caixa_texto.height // 2)
                 porta_chaves.paste(caixa_texto, (px, py), caixa_texto)
 
-        # Desenhar as duas linhas com o novo espaçamento elegante entre caracteres
-        desenho_texto_espacoso(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, estilo_fonte1, tamanho_fonte1)
-        desenho_texto_espacoso(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, estilo_fonte2, tamanho_fonte2)
+        # Desenhar as duas linhas aplicando o Tipo de Letra, Estilo, Tamanho e Espaçamento
+        desenho_texto_custom(canvas, texto_linha1, (pos_txt1_x, pos_txt1_y), cor_texto_pc, tipo_fonte1, estilo_fonte1, tamanho_fonte1)
+        desenho_texto_custom(canvas, texto_linha2, (pos_txt2_x, pos_txt2_y), cor_texto_pc, tipo_fonte2, estilo_fonte2, tamanho_fonte2)
 
         # Cortar as margens vazias para exportação
         if formato == "Retangular Horizontal":
@@ -190,7 +196,7 @@ with col_preview:
         else:
             imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-        st.image(imagem_final, caption="Design arejado com maior espaçamento", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+        st.image(imagem_final, caption="Design finalizado", use_column_width=False, width=450 if formato == "Retangular Horizontal" else 350)
         
         # Download do design atualizado
         buf = io.BytesIO()
@@ -198,13 +204,7 @@ with col_preview:
         byte_im = buf.getvalue()
         
         st.download_button(
-            label="💾 Descarregar Design (PNG)",
-            data=byte_im,
-            file_name="porta_chaves_espacoso.png",
-            mime="image/png"
-        )
-    else:
-        st.info("Insira as informações do Código QR à esquerda para criar o seu design.")
+
 
 
 
