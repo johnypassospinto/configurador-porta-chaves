@@ -72,7 +72,7 @@ with col_opcoes:
     ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
 
     # 3. Configuração dos Textos, Fontes e Tamanhos
-    st.subheader("3. Elementos de Texto")
+    st.subheader("3. Adicione Texto")
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
 
