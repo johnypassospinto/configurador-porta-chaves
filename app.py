@@ -42,8 +42,6 @@ def reiniciar_configurador():
         del st.session_state[chave]
     st.rerun()
 
-st.title("🎨 Personalize o seu Porta-Chaves Web")
-st.write("Altere as opções abaixo no painel lateral para construir o seu design.")
 
 # Divisão da página em duas colunas (Opções à esquerda, Pré-visualização à direita)
 col_opcoes, col_preview = st.columns([1, 1.2])
