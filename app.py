@@ -54,6 +54,11 @@ with col_opcoes:
     # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
+    
+    # Nota informativa sobre o tamanho real de impressão do formato retangular
+    if formato == "Retangular Horizontal":
+        st.info("📏 Formato configurado para impressão real de 5.0 cm x 2.2 cm (591 x 260 px a 300 DPI)")
+        
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
     # Definição de cores base do material
@@ -98,10 +103,10 @@ with col_opcoes:
 with col_preview:
     st.header("👁️ Pré-visualização")
     
-    # Define dados de contingência caso o utilizador apague os inputs
     conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
     
-    tamanho_base = (600, 500)
+    # Aumentamos ligeiramente a área base para comportar o novo tamanho de 591x260 pixels sem cortar
+    tamanho_base = (700, 500)
     porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
     canvas = ImageDraw.Draw(porta_chaves)
     
@@ -113,14 +118,25 @@ with col_preview:
     
     # Processar o desenho e as coordenadas conforme a estrutura selecionada
     if formato == "Retangular Horizontal":
-        img_qr = img_qr.resize((150, 150))
-        canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
-        porta_chaves.paste(img_qr, (370, 145))
+        # REDIMENSIONAMENTO E COORDENADAS ADAPTADAS PARA GERAR EXATAMENTE 591x260px APÓS O CROP
+        # Margem de 5px nas bordas do retângulo exterior [x0, y0, x1, y1]
+        x0, y0, x1, y1 = 50, 120, 641, 380  # Diferença exata de 591 em largura e 260 em altura
         
-        pos_logo_x, pos_logo_y = 240, 135
-        pos_txt1_x, pos_txt1_y = 240, 295
-        pos_txt2_x, pos_txt2_y = 240, 335
+        # QR Code redimensionado proporcionalmente para a nova altura da etiqueta
+        img_qr = img_qr.resize((210, 210))
+        
+        # Desenha a estrutura exterior
+        canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        # Furo do porta-chaves ajustado para o canto esquerdo superior
+        canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
+        
+        # Posiciona o QR Code no lado direito de forma limpa
+        porta_chaves.paste(img_qr, (410, 145))
+        
+        # Ajuste das coordenadas dos elementos decorativos e textos
+        pos_logo_x, pos_logo_y = 250, 135
+        pos_txt1_x, pos_txt1_y = 250, 295
+        pos_txt2_x, pos_txt2_y = 250, 335
         
     elif formato == "Quadrado":
         img_qr = img_qr.resize((180, 180))
@@ -154,38 +170,36 @@ with col_preview:
         except:
             pass
 
-    # Desenho nativo e limpo de texto (Espaçado) para máxima estabilidade
+    # Desenho nativo e limpo de texto (Espaçado)
     font_padrao = ImageFont.load_default()
     
-    # Converte o texto para formato espaçado (T E X T O) para manter o look arejado solicitado
     texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
     texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
     
-    # Aplica o desenho diretamente no canvas usando ancoragem padrão do Python
     canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
     canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
 
-    # Executa o Crop inteligente para remover bordas vazias antes de enviar ao ecrã
+    # Executa o Crop inteligente mantendo os limites exatos do desenho
     if formato == "Retangular Horizontal":
-        imagem_final = porta_chaves.crop((45, 125, 555, 375))
+        imagem_final = porta_chaves.crop((50, 120, 641, 380))  # Recorte exato de 591x260 px
     else:
         imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-    # Renderiza o porta-chaves de forma fixa e imediata na página web
+    # Renderiza o porta-chaves de forma fixa na página web
     st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
     
-    # Preparação estável do botão de download
+    # Preparação estável do botão de download (Com metadados em 300 DPI)
     buf = io.BytesIO()
-    imagem_final.save(buf, format="PNG")
+    # Adicionado DPI (300, 300) nos metadados para que programas de impressão respeitem os 5cm x 2.2cm
+    imagem_final.save(buf, format="PNG", dpi=(300, 300))
     byte_im = buf.getvalue()
     
     st.download_button(
-        label="💾 Descarregar Design (PNG)",
+        label="💾 Descarregar Design para Impressão (300 DPI)",
         data=byte_im,
-        file_name="porta_chaves_final.png",
+        file_name="porta_chaves_5x2.2cm.png",
         mime="image/png"
     )
-
 
 
 
