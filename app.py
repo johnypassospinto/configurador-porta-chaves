@@ -92,6 +92,12 @@ with st.sidebar:
         dados_qr = st.text_area("Insira a mensagem:", "Mensagem Exemplo", key="dados_texto")
     else:
         dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
+        
+    # 🎯 NOVO CONTROLADOR MANUAL PARA O TAMANHO DO QR CODE
+    # Ajusta os limites recomendados de acordo com o formato para evitar sobreposições grotescas
+    max_qr_permitido = 240 if formato == "Retangular Horizontal" else 300
+    padrao_qr = 210 if formato == "Retangular Horizontal" else 180
+    tamanho_qr_manual = st.slider("Tamanho Manual do QR Code:", min_value=100, max_value=max_qr_permitido, value=padrao_qr, step=5, key="qr_code_size")
 
     # Botão de reiniciar na base da barra lateral
     st.markdown("---")
@@ -120,31 +126,44 @@ img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert
 # Processar o desenho e as coordenadas conforme a estrutura selecionada
 if formato == "Retangular Horizontal":
     x0, y0, x1, y1 = 50, 120, 641, 380  
-    img_qr = img_qr.resize((210, 210))
+    
+    # Redimensiona utilizando o valor definido pelo slider manual
+    img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     
     canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
-    porta_chaves.paste(img_qr, (410, 145))
+    
+    # Alinhamento dinâmico para garantir que o QR Code fica centrado verticalmente mesmo se mudar de tamanho
+    pos_qr_y = y0 + ((y1 - y0) - tamanho_qr_manual) // 2
+    porta_chaves.paste(img_qr, (410, pos_qr_y))
     
     pos_logo_x, pos_logo_y = 250, 135
     pos_txt1_x, pos_txt1_y = 250, 290
     pos_txt2_x, pos_txt2_y = 250, 335
     
 elif formato == "Quadrado":
-    img_qr = img_qr.resize((180, 180))
+    img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
-    porta_chaves.paste(img_qr, (210, 210))
+    
+    # Centra o QR Code dinamicamente no meio do quadrado
+    pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
+    pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
+    porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
     
     pos_logo_x, pos_logo_y = 300, 110
     pos_txt1_x, pos_txt1_y = 300, 390
     pos_txt2_x, pos_txt2_y = 300, 430
     
 elif formato == "Circular":
-    img_qr = img_qr.resize((180, 180))
+    img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
-    porta_chaves.paste(img_qr, (210, 210))
+    
+    # Centra o QR Code dinamicamente no meio do círculo
+    pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
+    pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
+    porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
     
     pos_logo_x, pos_logo_y = 300, 120
     pos_txt1_x, pos_txt1_y = 300, 390
@@ -162,7 +181,7 @@ if ficheiro_logo is not None:
     except:
         pass
 
-# 🔤 PROCESSAMENTO DA FONTE TIPOGRÁFICA
+# PROCESSAMENTO DA FONTE TIPOGRÁFICA
 if ficheiro_fonte is not None:
     try:
         bytes_fonte = io.BytesIO(ficheiro_fonte.read())
