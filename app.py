@@ -47,7 +47,7 @@ def reiniciar_configurador():
 col_opcoes, col_preview = st.columns([1, 1.2])
 
 with col_opcoes:
-    st.header("⚙️ Opções de Personalização")
+    
     
     # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
