@@ -27,7 +27,8 @@ def configurar_imagem_fundo():
             }}
             /* Painéis translúcidos elegantes para leitura sobre o fundo */
             [data-testid="stHeader"], [data-testid="stSidebar"], .stMarkdown {{
-                background: rgba(255, 255, 255, 0.02) !important;
+                background: rgba(255, 255, 255, 0.05) !important;
+                backdrop-filter: blur(10px);
             }}
         </style>
         """
@@ -42,23 +43,16 @@ def reiniciar_configurador():
         del st.session_state[chave]
     st.rerun()
 
-# Divisão da página em duas colunas (Opções à esquerda, Pré-visualização à direita)
-col_opcoes, col_preview = st.columns([1, 1.2])
-
-with col_opcoes:
-    # 💡 ESTE BLOCO EMPURRA AS OPÇÕES PARA BAIXO NA PÁGINA
-    # Pode aumentar ou diminuir o número multiplicador (ex: * 4 ou * 2) para ajustar a altura
-    st.markdown("<br>" * 3, unsafe_allow_html=True)
-    
+# ⚙️ PAINEL LATERAL FIXO (st.sidebar)
+with st.sidebar:
     st.header("⚙️ Opções de Personalização")
     
     # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     
-    # Nota informativa sobre o tamanho real de impressão do formato retangular
     if formato == "Retangular Horizontal":
-        st.info("📏 Formato configurado para impressão real de 5.0 cm x 2.2 cm (591 x 260 px a 300 DPI)")
+        st.info("📏 Tamanho de impressão real: 5.0 cm x 2.2 cm (591 x 260 px @ 300 DPI)")
         
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
@@ -73,14 +67,14 @@ with col_opcoes:
         cor_fundo_pc = "#1A1A1A"
         cor_texto_pc = "#FFFFFF"
     else:
-        cor_fundo_pc = st.color_picker("Escolha a cor de fundo do porta-chaves:", "#FFFFFF", key="cor_fundo_custom")
+        cor_fundo_pc = st.color_picker("Escolha a cor de fundo:", "#FFFFFF", key="cor_fundo_custom")
         cor_texto_pc = st.color_picker("Escolha a cor do texto/linhas:", "#000000", key="cor_texto_custom")
 
     # 2. Upload do Logótipo
     st.subheader("2. Imagem / Logótipo")
     ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
 
-    # 3. Configuração dos Textos, Fontes e Tamanhos
+    # 3. Configuração dos Textos
     st.subheader("3. Elementos de Texto")
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
@@ -96,104 +90,107 @@ with col_opcoes:
     else:
         dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
 
-    # BOTÃO DE VOLTAR AO INÍCIO
+    # Botão de reiniciar na base da barra lateral
     st.markdown("---")
-    st.button("🔄 Voltar ao Início / Limpar Tudo", on_click=reiniciar_configurador, type="secondary")
+    st.button("🔄 Limpar Tudo", on_click=reiniciar_configurador, type="secondary", use_container_width=True)
 
-# GERAÇÃO DO DESIGN À DIREITA
-with col_preview:
-    st.header("👁️ Pré-visualização")
-    
-    conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
-    
-    # Aumentamos ligeiramente a área base para comportar o novo tamanho de 591x260 pixels sem cortar
-    tamanho_base = (700, 500)
-    porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
-    canvas = ImageDraw.Draw(porta_chaves)
-    
-    # Gerar o Código QR interno de forma estável
-    qr = qrcode.QRCode(version=1, box_size=5, border=1)
-    qr.add_data(conteudo_final_qr)
-    qr.make(fit=True)
-    img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
-    
-    # Processar o desenho e as coordenadas conforme a estrutura selecionada
-    if formato == "Retangular Horizontal":
-        # REDIMENSIONAMENTO E COORDENADAS ADAPTADAS PARA GERAR EXATAMENTE 591x260px APÓS O CROP
-        x0, y0, x1, y1 = 50, 120, 641, 380  
-        
-        img_qr = img_qr.resize((210, 210))
-        
-        canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
-        
-        porta_chaves.paste(img_qr, (410, 145))
-        
-        pos_logo_x, pos_logo_y = 250, 135
-        pos_txt1_x, pos_txt1_y = 250, 295
-        pos_txt2_x, pos_txt2_y = 250, 335
-        
-    elif formato == "Quadrado":
-        img_qr = img_qr.resize((180, 180))
-        canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
-        porta_chaves.paste(img_qr, (210, 210))
-        
-        pos_logo_x, pos_logo_y = 300, 110
-        pos_txt1_x, pos_txt1_y = 300, 390
-        pos_txt2_x, pos_txt2_y = 300, 430
-        
-    elif formato == "Circular":
-        img_qr = img_qr.resize((180, 180))
-        canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
-        porta_chaves.paste(img_qr, (210, 210))
-        
-        pos_logo_x, pos_logo_y = 300, 120
-        pos_txt1_x, pos_txt1_y = 300, 390
-        pos_txt2_x, pos_txt2_y = 300, 430
 
-    # Inserção estável do Logótipo (se anexado)
-    if ficheiro_logo is not None:
-        try:
-            logo = Image.open(ficheiro_logo).convert("RGBA")
-            max_largura = 160 if formato == "Retangular Horizontal" else 180
-            max_altura = 80 if formato == "Retangular Horizontal" else 95
-            logo.thumbnail((max_largura, max_altura))
-            logo_final_x = pos_logo_x - (logo.width // 2)
-            porta_chaves.paste(logo, (logo_final_x, pos_logo_y), logo if logo.mode == 'RGBA' else None)
-        except:
-            pass
+# 🖼️ ÁREA PRINCIPAL DA PÁGINA (Focada na Pré-visualização)
+st.title("🎨 Personalize o seu Porta-Chaves Web")
+st.write("Utilize a barra lateral esquerda para modificar o design em tempo real.")
 
-    # Desenho nativo e limpo de texto (Espaçado)
-    font_padrao = ImageFont.load_default()
-    
-    texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
-    texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
-    
-    canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
-    canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+st.markdown("---")
+st.header("👁️ Pré-visualização do Produto")
 
-    # Executa o Crop inteligente
-    if formato == "Retangular Horizontal":
-        imagem_final = porta_chaves.crop((50, 120, 641, 380))
-    else:
-        imagem_final = porta_chaves.crop((95, 45, 505, 455))
+conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
 
-    # Renderiza o porta-chaves de forma fixa na página web
-    st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+tamanho_base = (700, 500)
+porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
+canvas = ImageDraw.Draw(porta_chaves)
+
+# Gerar o Código QR interno de forma estável
+qr = qrcode.QRCode(version=1, box_size=5, border=1)
+qr.add_data(conteudo_final_qr)
+qr.make(fit=True)
+img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
+
+# Processar o desenho e as coordenadas conforme a estrutura selecionada
+if formato == "Retangular Horizontal":
+    x0, y0, x1, y1 = 50, 120, 641, 380  
+    img_qr = img_qr.resize((210, 210))
     
-    # Preparação estável do botão de download (Com metadados em 300 DPI)
-    buf = io.BytesIO()
-    imagem_final.save(buf, format="PNG", dpi=(300, 300))
-    byte_im = buf.getvalue()
+    canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+    canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
+    porta_chaves.paste(img_qr, (410, 145))
     
-    st.download_button(
-        label="💾 Descarregar Design para Impressão (300 DPI)",
-        data=byte_im,
-        file_name="porta_chaves_5x2.2cm.png",
-        mime="image/png"
-    )
+    pos_logo_x, pos_logo_y = 250, 135
+    pos_txt1_x, pos_txt1_y = 250, 295
+    pos_txt2_x, pos_txt2_y = 250, 335
+    
+elif formato == "Quadrado":
+    img_qr = img_qr.resize((180, 180))
+    canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+    canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
+    porta_chaves.paste(img_qr, (210, 210))
+    
+    pos_logo_x, pos_logo_y = 300, 110
+    pos_txt1_x, pos_txt1_y = 300, 390
+    pos_txt2_x, pos_txt2_y = 300, 430
+    
+elif formato == "Circular":
+    img_qr = img_qr.resize((180, 180))
+    canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+    canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+    porta_chaves.paste(img_qr, (210, 210))
+    
+    pos_logo_x, pos_logo_y = 300, 120
+    pos_txt1_x, pos_txt1_y = 300, 390
+    pos_txt2_x, pos_txt2_y = 300, 430
+
+# Inserção estável do Logótipo (se anexado)
+if ficheiro_logo is not None:
+    try:
+        logo = Image.open(ficheiro_logo).convert("RGBA")
+        max_largura = 160 if formato == "Retangular Horizontal" else 180
+        max_altura = 80 if formato == "Retangular Horizontal" else 95
+        logo.thumbnail((max_largura, max_altura))
+        logo_final_x = pos_logo_x - (logo.width // 2)
+        porta_chaves.paste(logo, (logo_final_x, pos_logo_y), logo if logo.mode == 'RGBA' else None)
+    except:
+        pass
+
+# Desenho nativo e limpo de texto (Espaçado)
+font_padrao = ImageFont.load_default()
+
+texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
+texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
+
+canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+
+# Executa o Crop inteligente
+if formato == "Retangular Horizontal":
+    imagem_final = porta_chaves.crop((50, 120, 641, 380))  # Recorte exato de 591x260 px
+else:
+    imagem_final = porta_chaves.crop((95, 45, 505, 455))
+
+# Apresenta a imagem centrada na área principal
+st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=500 if formato == "Retangular Horizontal" else 380)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Preparação estável do botão de download (Com metadados em 300 DPI)
+buf = io.BytesIO()
+imagem_final.save(buf, format="PNG", dpi=(300, 300))
+byte_im = buf.getvalue()
+
+st.download_button(
+    label="💾 Descarregar Design para Impressão (300 DPI)",
+    data=byte_im,
+    file_name="porta_chaves_5x2.2cm.png",
+    mime="image/png"
+)
+
 
 
 
