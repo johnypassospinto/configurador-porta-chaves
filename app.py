@@ -5,9 +5,7 @@ import io
 import base64
 import os
 
-# ==========================================
-# 1. CONFIGURAÇÃO DA PÁGINA WEB
-# ==========================================
+# Configuração da página web
 st.set_page_config(page_title="Configurador de Porta-Chaves", page_icon="🔑", layout="wide")
 
 # FUNÇÃO PARA CONFIGURAR A IMAGEM DE FUNDO DA PÁGINA WEB
@@ -45,14 +43,7 @@ def reiniciar_configurador():
         del st.session_state[chave]
     st.rerun()
 
-# FUNÇÃO PARA CONVERTER CENTÍMETROS EM PIXÉIS A 300 DPI
-def cm_para_px(cm, dpi=300):
-    return int((cm / 2.54) * dpi)
-
-
-# ==========================================
-# 2. ⚙️ PAINEL LATERAL FIXO (st.sidebar)
-# ==========================================
+# ⚙️ PAINEL LATERAL FIXO (st.sidebar)
 with st.sidebar:
     st.header("⚙️ Opções de Personalização")
     
@@ -61,93 +52,184 @@ with st.sidebar:
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     
     if formato == "Retangular Horizontal":
-        st.info("📏 Tamanho da etiqueta: 5.5 cm x 2.0 cm. O download irá gerar um painel com 3 etiquetas prontas a imprimir.")
+        st.info("O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas.")
         
-    material = st.selectbox("Simular Material/Cor base:", ["Madeira Clara", "Madeira Escura", "Acrílico Branco", "Acrílico Preto", "Acrílico Transparente"], key="material_escolhido")
-    cor_texto = st.color_picker("Cor da Gravação/Texto:", "#000000" if "Branco" in material or "Transparente" in material else "#FFFFFF")
+    material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
+    
+    if material == "Branco Clássico":
+        cor_fundo_pc = "#FFFFFF"
+        cor_texto_pc = "#000000"
+    elif material == "Madeira":
+        cor_fundo_pc = "#DEB887"
+        cor_texto_pc = "#4A2711"
+    elif material == "Acrílico Preto":
+        cor_fundo_pc = "#1A1A1A"
+        cor_texto_pc = "#FFFFFF"
+    else:
+        cor_fundo_pc = st.color_picker("Escolha a cor de fundo:", "#FFFFFF", key="cor_fundo_custom")
+        cor_texto_pc = st.color_picker("Escolha a cor do texto/linhas:", "#000000", key="cor_texto_custom")
 
-    # Botão de reinício inserido na barra lateral
+    # 2. Upload do Logótipo
+    st.subheader("2. Imagem / Logótipo")
+    ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
+
+    # 3. Configuração dos Textos e Tipografia
+    st.subheader("3. Elementos de Texto")
+    texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
+    texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
+    
+    ficheiro_fonte = st.file_uploader("Carregue uma Fonte Customizada (.ttf ou .otf):", type=["ttf", "otf"], key="font_upload")
+    tamanho_fonte = st.slider("Tamanho da Letra:", min_value=12, max_value=40, value=20, step=1, key="font_size")
+
+    # 4. Configuração do Código QR
+    st.subheader("4. Conteúdo do Código QR")
+    tipo_qr = st.selectbox("O que o QR Code vai abrir?", ["Link (URL)", "Texto Secreto", "Número de Telefone"], key="tipo_qr_escolhido")
+    
+    if tipo_qr == "Link (URL)":
+        dados_qr = st.text_input("Insira o Link:", "https://google.com", key="dados_url")
+    elif tipo_qr == "Texto Secreto":
+        dados_qr = st.text_area("Insira a mensagem:", "Mensagem Exemplo", key="dados_texto")
+    else:
+        dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
+        
+    max_qr_permitido = 240 if formato == "Retangular Horizontal" else 300
+    padrao_qr = 210 if formato == "Retangular Horizontal" else 180
+    tamanho_qr_manual = st.slider("Tamanho Manual do QR Code:", min_value=100, max_value=max_qr_permitido, value=padrao_qr, step=5, key="qr_code_size")
+
     st.markdown("---")
-    if st.button("🔄 Reiniciar Configurador", use_container_width=True):
-        reiniciar_configurador()
+    st.button("🔄 Limpar Tudo", on_click=reiniciar_configurador, type="secondary", use_container_width=True)
 
 
-# ==========================================
-# 3. 👁️ ÁREA PRINCIPAL (Visualização e Geração)
-# ==========================================
-st.title("🔑 Visualização e Geração das Etiquetas")
+# 🖼️ ÁREA PRINCIPAL DA PÁGINA (Focada na Pré-visualização)
+st.title("🎨 Personalize o seu Porta-Chaves Web")
+st.write("Utilize a barra lateral esquerda para modificar o design em tempo real.")
+st.markdown("---")
 
-# Dimensões exatas pedidas: 5.5 cm x 2.0 cm a 300 DPI
-LARGURA_ETIQUETA = cm_para_px(5.5)  # ~650 px
-ALTURA_ETIQUETA = cm_para_px(2.0)   # ~236 px
+conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
+tamanho_base = (700, 500)
+porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
+canvas = ImageDraw.Draw(porta_chaves)
 
-# Criar a imagem base da etiqueta única
-etiqueta = Image.new("RGB", (LARGURA_ETIQUETA, ALTURA_ETIQUETA), "#FFFFFF")
-desenho = ImageDraw.Draw(etiqueta)
-
-# --- SIMULAÇÃO DO MATERIAL DE FUNDO ---
-cor_fundo_material = "#D7B587"  # Madeira Clara padrão
-if material == "Madeira Escura":
-    cor_fundo_material = "#5A3A22"
-elif material == "Acrílico Branco":
-    cor_fundo_material = "#F5F5F5"
-elif material == "Acrílico Preto":
-    cor_fundo_material = "#1A1A1A"
-elif material == "Acrílico Transparente":
-    cor_fundo_material = "#EAEAEA"
-
-desenho.rectangle([0, 0, LARGURA_ETIQUETA, ALTURA_ETIQUETA], fill=cor_fundo_material)
-
-# --- GERAR E DESENHAR UM QR CODE PADRÃO ---
-link_base = "https://google.com"
-
-qr = qrcode.QRCode(version=1, box_size=1, border=1)
-qr.add_data(link_base)
+# Gerar o Código QR interno
+qr = qrcode.QRCode(version=1, box_size=5, border=1)
+qr.add_data(conteudo_final_qr)
 qr.make(fit=True)
+img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
 
-img_qr = qr.make_image(fill_color=cor_texto, back_color=cor_fundo_material)
+# 🛠️ CORREÇÃO ABSOLUTA: Parênteses fechados e coordenadas limpas em todas as formas geométricas
+if formato == "Retangular Horizontal":
+    x0, y0, x1, y1 = 50, 120, 641, 380  
+    img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
+    canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+    canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
+    pos_qr_y = y0 + ((y1 - y0) - tamanho_qr_manual) // 2
+    porta_chaves.paste(img_qr, (410, pos_qr_y))
+    pos_logo_x, pos_logo_y = 250, 135
+    pos_txt1_x, pos_txt1_y = 250, 290
+    pos_txt2_x, pos_txt2_y = 250, 335
+    
+elif formato == "Quadrado":
+    img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
+    canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+    canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
+    pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
+    pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
+    porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
+    pos_logo_x, pos_logo_y = 300, 110
+    pos_txt1_x, pos_txt1_y = 300, 390
+    pos_txt2_x, pos_txt2_y = 300, 430
+    
+elif formato == "Circular":
+    img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
+    canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+    canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+    pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
+    pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
+    porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
+    pos_logo_x, pos_logo_y = 300, 120
+    pos_txt1_x, pos_txt1_y = 300, 390
+    pos_txt2_x, pos_txt2_y = 300, 430
 
-# Redimensionar o QR Code para caber na altura exata de 2,0 cm (com margem)
-tamanho_qr = int(ALTURA_ETIQUETA * 0.85)
-img_qr = img_qr.resize((tamanho_qr, tamanho_qr))
+# Inserção do Logótipo
+if ficheiro_logo is not None:
+    try:
+        logo = Image.open(ficheiro_logo).convert("RGBA")
+        max_largura = 160 if formato == "Retangular Horizontal" else 180
+        max_altura = 80 if formato == "Retangular Horizontal" else 95
+        logo.thumbnail((max_largura, max_altura))
+        logo_final_x = pos_logo_x - (logo.width // 2)
+        porta_chaves.paste(logo, (logo_final_x, pos_logo_y), logo if logo.mode == 'RGBA' else None)
+    except:
+        pass
 
-# Colar o QR Code no lado esquerdo da etiqueta
-margem_vertical = int((ALTURA_ETIQUETA - tamanho_qr) / 2)
-etiqueta.paste(img_qr, (margem_vertical, margem_vertical))
+# Processamento da Fonte
+if ficheiro_fonte is not None:
+    try:
+        bytes_fonte = io.BytesIO(ficheiro_fonte.read())
+        font_design = ImageFont.truetype(bytes_fonte, tamanho_fonte)
+    except:
+        font_design = ImageFont.load_default()
+else:
+    font_design = ImageFont.load_default()
 
-# --- DESENHAR UMA BORDA DE CORTE FINA ---
-desenho.rectangle([0, 0, LARGURA_ETIQUETA - 1, ALTURA_ETIQUETA - 1], outline="#CCCCCC")
+# Desenho do texto
+texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
+texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
+canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_design, anchor="mm")
+canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_design, anchor="mm")
 
-# --- GERAR PAINEL DE IMPRESSÃO (Folha com 3 etiquetas) ---
-espaco_corte = cm_para_px(0.4)
-LARGURA_PAINEL = LARGURA_ETIQUETA
-ALTURA_PAINEL = (ALTURA_ETIQUETA * 3) + (espaco_corte * 2)
+# Corte da etiqueta individual
+if formato == "Retangular Horizontal":
+    imagem_final = porta_chaves.crop((50, 120, 641, 380))
+else:
+    imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-painel_impressao = Image.new("RGB", (LARGURA_PAINEL, ALTURA_PAINEL), "#FFFFFF")
+# Exibe a pré-visualização na tela
+st.subheader("👁️ Pré-visualização em Tempo Real")
+st.image(imagem_final, caption="Edição atual do seu Porta-Chaves", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
 
-# Colar as 3 etiquetas no painel
-for i in range(3):
-    y_pos = i * (ALTURA_ETIQUETA + espaco_corte)
-    painel_impressao.paste(etiqueta, (0, y_pos))
+st.markdown("---")
+st.subheader("📦 Exportar para Impressão")
 
-# --- MOSTRAR PRÉ-VIUALIZAÇÃO NA PÁGINA ---
-st.subheader("👁️ Pré-visualização do Painel de Impressão (3 unidades)")
-st.image(painel_impressao, caption="Painel formatado para impressão física (5,5 cm x 2,0 cm por etiqueta)", width=350)
+# Montagem do bloco de download composto
+if formato == "Retangular Horizontal":
+    largura_total_alvo = 1004
+    altura_total_alvo = 413
+    
+    folha_impressao = Image.new("RGB", (largura_total_alvo, altura_total_alvo), "#FFFFFF")
+    
+    largura_mini = (largura_total_alvo - 80) // 3
+    proporcao = imagem_final.height / imagem_final.width
+    altura_mini = int(largura_mini * proporcao)
+    etiqueta_mini = imagem_final.resize((largura_mini, altura_mini), Image.Resampling.LANCZOS)
+    
+    pos_y = (altura_total_alvo - altura_mini) // 2
+    espacamento_x = (largura_total_alvo - (largura_mini * 3)) // 4
+    
+    for idx in range(3):
+        pos_x = espacamento_x + idx * (largura_mini + espacamento_x)
+        folha_impressao.paste(etiqueta_mini, (pos_x, pos_y))
+        
+    imagem_para_exportar = folha_impressao
+    nome_ficheiro = "3_etiquetas_8.5x3.5cm.jpg"
+    texto_botao = "💾 Fazer Download do Painel de 3 Etiquetas (8.5x3.5 cm)"
+else:
+    imagem_para_exportar = imagem_final
+    nome_ficheiro = "etiqueta_individual.jpg"
+    texto_botao = "💾 Fazer Download da Etiqueta Individual"
 
-# --- CONFIGURAR O BOTÃO DE DOWNLOAD ---
-buffer = io.BytesIO()
-painel_impressao.save(buffer, format="JPEG", dpi=(300, 300), quality=100)
-dados_ficheiro = buffer.getvalue()
+# Conversão limpa para bytes
+buffer_bytes = io.BytesIO()
+imagem_para_exportar.convert("RGB").save(buffer_bytes, format="JPEG", quality=100, dpi=(300, 300))
+conteudo_binario = buffer_bytes.getvalue()
 
-st.subheader("💾 Descarregar")
+# Criação nativa do botão de download
 st.download_button(
-    label="Descarregar Painel Pronto a Imprimir (JPEG de Alta Resolução)",
-    data=dados_ficheiro,
-    file_name="etiquetas_porta_chaves_55x20mm.jpg",
+    label=texto_botao,
+    data=conteudo_binario,
+    file_name=nome_ficheiro,
     mime="image/jpeg",
-    use_container_width=True
+    key="btn_download_seguro_real_final"
 )
-
-
 
 
