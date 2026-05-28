@@ -51,84 +51,143 @@ col_opcoes, col_preview = st.columns([1, 1.2])
 with col_opcoes:
     st.header("⚙️ Opções de Personalização")
     
-    # 1. Escolha do Formato Físico (Mantendo a sua estrutura original)
+    # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
-    formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal (5x2.2cm)", "Quadrado", "Circular"], key="formato_escolhido")
-    material = st.selectbox("Simular Material:", ["Acrílico Transparente", "Madeira", "Plástico Preto", "Metal"], key="material_escolhido")
+    formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
+    material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
-    # Cores e Conteúdo (Continuando as opções do painel lateral)
-    cor_fundo = st.color_picker("Cor de Fundo do Porta-Chaves:", "#FFFFFF", key="cor_fundo")
-    cor_conteudo = st.color_picker("Cor do QR Code e Texto:", "#000000", key="cor_conteudo")
-    
-    st.subheader("2. Conteúdo")
-    dados_qr = st.text_input("Link ou Texto do QR Code:", "https://google.com", key="dados_qr")
-    texto_porta_chaves = st.text_input("Texto do Porta-Chaves:", "Porta-Chaves", key="texto")
-    
-    if st.button("🔄 Reiniciar Tudo", on_click=reiniciar_configurador):
-        pass
+    # Definição de cores base do material
+    if material == "Branco Clássico":
+        cor_fundo_pc = "#FFFFFF"
+        cor_texto_pc = "#000000"
+    elif material == "Madeira":
+        cor_fundo_pc = "#DEB887"
+        cor_texto_pc = "#4A2711"
+    elif material == "Acrílico Preto":
+        cor_fundo_pc = "#1A1A1A"
+        cor_texto_pc = "#FFFFFF"
+    else:
+        cor_fundo_pc = st.color_picker("Escolha a cor de fundo do porta-chaves:", "#FFFFFF", key="cor_fundo_custom")
+        cor_texto_pc = st.color_picker("Escolha a cor do texto/linhas:", "#000000", key="cor_texto_custom")
 
+    # 2. Upload do Logótipo
+    st.subheader("2. Imagem / Logótipo")
+    ficheiro_logo = st.file_uploader("Carregue o seu logótipo (PNG ou JPG):", type=["png", "jpg", "jpeg"], key="logo_upload")
+
+    # 3. Configuração dos Textos, Fontes e Tamanhos
+    st.subheader("3. Elementos de Texto")
+    texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
+    texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
+
+    # 4. Configuração do Código QR
+    st.subheader("4. Conteúdo do Código QR")
+    tipo_qr = st.selectbox("O que o QR Code vai abrir?", ["Link (URL)", "Texto Secreto", "Número de Telefone"], key="tipo_qr_escolhido")
+    
+    if tipo_qr == "Link (URL)":
+        dados_qr = st.text_input("Insira o Link:", "https://google.com", key="dados_url")
+    elif tipo_qr == "Texto Secreto":
+        dados_qr = st.text_area("Insira a mensagem:", "Mensagem Exemplo", key="dados_texto")
+    else:
+        dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
+
+    # BOTÃO DE VOLTAR AO INÍCIO
+    st.markdown("---")
+    st.button("🔄 Voltar ao Início / Limpar Tudo", on_click=reiniciar_configurador, type="secondary")
+
+# GERAÇÃO DO DESIGN À DIREITA
 with col_preview:
-    st.header("🖼️ Pré-visualização")
+    st.header("👁️ Pré-visualização")
     
-    # Definição do tamanho com base na escolha (Se retangular, força os 5cm x 2.2cm a 300 DPI)
-    if "Retangular" in formato:
-        largura_px = 591  # 5 cm
-        altura_px = 260   # 2.2 cm
+    # Define dados de contingência caso o utilizador apague os inputs
+    conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
+    
+    tamanho_base = (600, 500)
+    porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
+    canvas = ImageDraw.Draw(porta_chaves)
+    
+    # Gerar o Código QR interno de forma estável
+    qr = qrcode.QRCode(version=1, box_size=5, border=1)
+    qr.add_data(conteudo_final_qr)
+    qr.make(fit=True)
+    img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
+    
+    # Processar o desenho e as coordenadas conforme a estrutura selecionada
+    if formato == "Retangular Horizontal":
+        img_qr = img_qr.resize((150, 150))
+        canvas.rectangle([50, 130, 550, 370], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
+        porta_chaves.paste(img_qr, (370, 145))
+        
+        pos_logo_x, pos_logo_y = 240, 135
+        pos_txt1_x, pos_txt1_y = 240, 295
+        pos_txt2_x, pos_txt2_y = 240, 335
+        
     elif formato == "Quadrado":
-        largura_px = 350
-        altura_px = 350
-    else:  # Circular
-        largura_px = 350
-        altura_px = 350
+        img_qr = img_qr.resize((180, 180))
+        canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
+        porta_chaves.paste(img_qr, (210, 210))
+        
+        pos_logo_x, pos_logo_y = 300, 110
+        pos_txt1_x, pos_txt1_y = 300, 390
+        pos_txt2_x, pos_txt2_y = 300, 430
+        
+    elif formato == "Circular":
+        img_qr = img_qr.resize((180, 180))
+        canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
+        canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+        porta_chaves.paste(img_qr, (210, 210))
+        
+        pos_logo_x, pos_logo_y = 300, 120
+        pos_txt1_x, pos_txt1_y = 300, 390
+        pos_txt2_x, pos_txt2_y = 300, 430
 
-    # Criar o fundo da etiqueta com a cor selecionada
-    imagem_final = Image.new("RGBA", (largura_px, altura_px), cor_fundo)
-    draw = ImageDraw.Draw(imagem_final)
-    
-    # Gerar e posicionar o QR Code proporcionalmente
-    tamanho_qr = 0
-    if dados_qr:
-        qr = qrcode.QRCode(version=1, box_size=1, border=1)
-        qr.add_data(dados_qr)
-        qr.make(fit=True)
-        
-        img_qr = qr.make_image(fill_color=cor_conteudo, back_color=cor_fundo).convert("RGBA")
-        
-        # O QR Code ocupa quase toda a altura disponível, deixando uma margem pequena
-        tamanho_qr = int(altura_px * 0.8)
-        img_qr = img_qr.resize((tamanho_qr, tamanho_qr), Image.Resampling.LANCZOS)
-        
-        # Margem superior para centrar verticalmente
-        margem_y = (altura_px - tamanho_qr) // 2
-        imagem_final.paste(img_qr, (20, margem_y), img_qr)
-    
-    # Gerar e posicionar o Texto
-    if texto_porta_chaves:
+    # Inserção estável do Logótipo (se anexado)
+    if ficheiro_logo is not None:
         try:
-            # Tenta usar uma fonte padrão do sistema. Pode mudar para uma .ttf se desejar.
-            fonte = ImageFont.load_default()
+            logo = Image.open(ficheiro_logo).convert("RGBA")
+            max_largura = 160 if formato == "Retangular Horizontal" else 180
+            max_altura = 80 if formato == "Retangular Horizontal" else 95
+            logo.thumbnail((max_largura, max_altura))
+            logo_final_x = pos_logo_x - (logo.width // 2)
+            porta_chaves.paste(logo, (logo_final_x, pos_logo_y), logo if logo.mode == 'RGBA' else None)
         except:
-            fonte = ImageFont.load_default()
-            
-        # Posiciona o texto à direita do QR Code de forma limpa
-        x_texto = tamanho_qr + 40
-        y_texto = altura_px // 2 - 10  # Centrado verticalmente
-        draw.text((x_texto, y_texto), texto_porta_chaves, fill=cor_conteudo)
+            pass
+
+    # Desenho nativo e limpo de texto (Espaçado) para máxima estabilidade
+    font_padrao = ImageFont.load_default()
     
-    # Apresentar o resultado no Streamlit
-    st.image(imagem_final, caption=f"Visualização da etiqueta ({formato})", use_container_width=False)
+    # Converte o texto para formato espaçado (T E X T O) para manter o look arejado solicitado
+    texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
+    texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
     
-    # Configurar o botão de download com metadados de alta resolução (300 DPI)
-    buffer = io.BytesIO()
-    imagem_final.convert("RGB").save(buffer, format="JPEG", dpi=(300, 300))
-    buffer.seek(0)
+    # Aplica o desenho diretamente no canvas usando ancoragem padrão do Python
+    canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+    canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
+
+    # Executa o Crop inteligente para remover bordas vazias antes de enviar ao ecrã
+    if formato == "Retangular Horizontal":
+        imagem_final = porta_chaves.crop((45, 125, 555, 375))
+    else:
+        imagem_final = porta_chaves.crop((95, 45, 505, 455))
+
+    # Renderiza o porta-chaves de forma fixa e imediata na página web
+    st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+    
+    # Preparação estável do botão de download
+    buf = io.BytesIO()
+    imagem_final.save(buf, format="PNG")
+    byte_im = buf.getvalue()
     
     st.download_button(
-        label="💾 Descarregar Imagem para Impressão (300 DPI)",
-        data=buffer,
-        file_name=f"etiqueta_{largura_px}x{altura_px}.jpg",
-        mime="image/jpeg"
+        label="💾 Descarregar Design (PNG)",
+        data=byte_im,
+        file_name="porta_chaves_final.png",
+        mime="image/png"
     )
+
+
+
 
 
 
