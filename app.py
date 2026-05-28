@@ -42,10 +42,18 @@ def reiniciar_configurador():
         del st.session_state[chave]
     st.rerun()
 
+# Elementos do Topo (Fora das colunas para organizar o visual)
+st.title("🎨 Personalize o seu Porta-Chaves Web")
+st.write("Altere as opções abaixo no painel lateral para construir o seu design.")
+
 # Divisão da página em duas colunas (Opções à esquerda, Pré-visualização à direita)
 col_opcoes, col_preview = st.columns([1, 1.2])
 
 with col_opcoes:
+    # 💡 ESTE BLOCO EMPURRA AS OPÇÕES PARA BAIXO NA PÁGINA
+    # Pode aumentar ou diminuir o número multiplicador (ex: * 4 ou * 2) para ajustar a altura
+    st.markdown("<br>" * 3, unsafe_allow_html=True)
+    
     st.header("⚙️ Opções de Personalização")
     
     # 1. Escolha do Formato Físico
@@ -116,21 +124,15 @@ with col_preview:
     # Processar o desenho e as coordenadas conforme a estrutura selecionada
     if formato == "Retangular Horizontal":
         # REDIMENSIONAMENTO E COORDENADAS ADAPTADAS PARA GERAR EXATAMENTE 591x260px APÓS O CROP
-        # Margem de 5px nas bordas do retângulo exterior [x0, y0, x1, y1]
-        x0, y0, x1, y1 = 50, 120, 641, 380  # Diferença exata de 591 em largura e 260 em altura
+        x0, y0, x1, y1 = 50, 120, 641, 380  
         
-        # QR Code redimensionado proporcionalmente para a nova altura da etiqueta
         img_qr = img_qr.resize((210, 210))
         
-        # Desenha a estrutura exterior
         canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-        # Furo do porta-chaves ajustado para o canto esquerdo superior
         canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
         
-        # Posiciona o QR Code no lado direito de forma limpa
         porta_chaves.paste(img_qr, (410, 145))
         
-        # Ajuste das coordenadas dos elementos decorativos e textos
         pos_logo_x, pos_logo_y = 250, 135
         pos_txt1_x, pos_txt1_y = 250, 295
         pos_txt2_x, pos_txt2_y = 250, 335
@@ -176,9 +178,9 @@ with col_preview:
     canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_padrao, anchor="mm")
     canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_padrao, anchor="mm")
 
-    # Executa o Crop inteligente mantendo os limites exatos do desenho
+    # Executa o Crop inteligente
     if formato == "Retangular Horizontal":
-        imagem_final = porta_chaves.crop((50, 120, 641, 380))  # Recorte exato de 591x260 px
+        imagem_final = porta_chaves.crop((50, 120, 641, 380))
     else:
         imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
@@ -187,7 +189,6 @@ with col_preview:
     
     # Preparação estável do botão de download (Com metadados em 300 DPI)
     buf = io.BytesIO()
-    # Adicionado DPI (300, 300) nos metadados para que programas de impressão respeitem os 5cm x 2.2cm
     imagem_final.save(buf, format="PNG", dpi=(300, 300))
     byte_im = buf.getvalue()
     
