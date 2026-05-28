@@ -41,7 +41,16 @@ def reiniciar_configurador():
     for chave in list(st.session_state.keys()):
         del st.session_state[chave]
     st.rerun()
-  
+
+st.title("🎨 Personalize o seu Porta-Chaves Web")
+st.write("Altere as opções abaixo no painel lateral para construir o seu design.")
+
+# Divisão da página em duas colunas (Opções à esquerda, Pré-visualização à direita)
+col_opcoes, col_preview = st.columns([1, 1.2])
+
+with col_opcoes:
+    st.header("⚙️ Opções de Personalização")
+    
     # 1. Escolha do Formato Físico
     st.subheader("1. Formato do Porta-Chaves")
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
