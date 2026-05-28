@@ -79,7 +79,6 @@ with st.sidebar:
     texto_linha1 = st.text_input("Texto - Linha Superior:", "A MINHA MARCA", key="txt_linha1")
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
     
-    # Novas opções de tipografia inseridas na barra lateral
     ficheiro_fonte = st.file_uploader("Carregue uma Fonte Customizada (.ttf ou .otf):", type=["ttf", "otf"], key="font_upload")
     tamanho_fonte = st.slider("Tamanho da Letra:", min_value=12, max_value=40, value=20, step=1, key="font_size")
 
@@ -166,7 +165,6 @@ if ficheiro_logo is not None:
 # 🔤 PROCESSAMENTO DA FONTE TIPOGRÁFICA
 if ficheiro_fonte is not None:
     try:
-        # Lê os bytes da fonte carregada pelo utilizador de forma dinâmica
         bytes_fonte = io.BytesIO(ficheiro_fonte.read())
         font_design = ImageFont.truetype(bytes_fonte, tamanho_fonte)
     except:
@@ -174,9 +172,7 @@ if ficheiro_fonte is not None:
 else:
     font_design = ImageFont.load_default()
 
-# Desenho nativo e limpo de texto (Espaçado)
-# Nota: Se carregar uma fonte elegante, pode optar por remover o ".join(list(...))" 
-# caso queira que as letras fiquem juntas normalmente.
+# Desenho nativo e texto espaçado
 texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
 texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
 
@@ -205,6 +201,7 @@ st.download_button(
     file_name="porta_chaves_5x2.2cm.png",
     mime="image/png"
 )
+
 
 
 
