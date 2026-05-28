@@ -52,7 +52,7 @@ with st.sidebar:
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     
     if formato == "Retangular Horizontal":
-        st.info("📏 O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas duplicadas.")
+        st.info("O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas.")
         
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
@@ -105,19 +105,18 @@ st.title("🎨 Personalize o seu Porta-Chaves Web")
 st.write("Utilize a barra lateral esquerda para modificar o design em tempo real.")
 st.markdown("---")
 
-# Criar a imagem base para desenho na memória temporária da sessão
 conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
 tamanho_base = (700, 500)
 porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
 canvas = ImageDraw.Draw(porta_chaves)
 
-# Gerar o Código QR interno de forma estável
+# Gerar o Código QR interno
 qr = qrcode.QRCode(version=1, box_size=5, border=1)
 qr.add_data(conteudo_final_qr)
 qr.make(fit=True)
 img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
 
-# Coordenadas e furos corrigidos para cada formato
+# 🛠️ CORREÇÃO ABSOLUTA: Parênteses fechados e coordenadas limpas em todas as formas geométricas
 if formato == "Retangular Horizontal":
     x0, y0, x1, y1 = 50, 120, 641, 380  
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
@@ -173,26 +172,26 @@ if ficheiro_fonte is not None:
 else:
     font_design = ImageFont.load_default()
 
-# Desenho do texto espaçado
+# Desenho do texto
 texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
 texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
 canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_design, anchor="mm")
 canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_design, anchor="mm")
 
-# Executa o Crop individual da etiqueta
+# Corte da etiqueta individual
 if formato == "Retangular Horizontal":
-    imagem_final = porta_chaves.crop((50, 120, 641, 380))  # Medida base de 591x260 px
+    imagem_final = porta_chaves.crop((50, 120, 641, 380))
 else:
     imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-# Exibe o design singular principal de forma imediata
+# Exibe a pré-visualização na tela
 st.subheader("👁️ Pré-visualização em Tempo Real")
 st.image(imagem_final, caption="Edição atual do seu Porta-Chaves", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
 
 st.markdown("---")
 st.subheader("📦 Exportar para Impressão")
 
-# 🛠️ GERAÇÃO DIRETA E SEQUENCIAL DA IMAGEM E DO BOTÃO (Sem try/except causadores de erros de sintaxe)
+# Montagem do bloco de download composto
 if formato == "Retangular Horizontal":
     largura_total_alvo = 1004
     altura_total_alvo = 413
@@ -219,15 +218,19 @@ else:
     nome_ficheiro = "etiqueta_individual.jpg"
     texto_botao = "💾 Fazer Download da Etiqueta Individual"
 
-# Converte o resultado final em bytes
+# Conversão limpa para bytes
 buffer_bytes = io.BytesIO()
 imagem_para_exportar.convert("RGB").save(buffer_bytes, format="JPEG", quality=100, dpi=(300, 300))
 conteudo_binario = buffer_bytes.getvalue()
 
-# Botão de download posicionado de forma nativa na raiz do Streamlit
+# Criação nativa do botão de download
 st.download_button(
     label=texto_botao,
     data=conteudo_binario,
+    file_name=nome_ficheiro,
+    mime="image/jpeg",
+    key="btn_download_seguro_real_final"
+)
 
 
 
