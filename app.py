@@ -121,7 +121,7 @@ qr.add_data(conteudo_final_qr)
 qr.make(fit=True)
 img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
 
-# Processar o desenho e as coordenadas conforme a estrutura selecionada
+# Coordenadas corrigidas (sem parênteses vazios)
 if formato == "Retangular Horizontal":
     x0, y0, x1, y1 = 50, 120, 641, 380  
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
@@ -200,15 +200,13 @@ else:
 st.image(imagem_final, caption="Design Base Editado", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
 
 
-# 🛠️ LÓGICA DE MONTAGEM PARA DOWNLOAD (3 Etiquetas no espaço de 8.5 x 3.5 cm)
+# 🛠️ MONTAGEM DAS 3 ETIQUETAS NO ESPAÇO DE 8.5 x 3.5 cm
 if formato == "Retangular Horizontal":
     largura_total_alvo = 1004
     altura_total_alvo = 413
     
-    # Criamos um fundo branco com o tamanho total alvo
     folha_impressao = Image.new("RGB", (largura_total_alvo, altura_total_alvo), "#FFFFFF")
     
-    # Calculamos as dimensões das etiquetas para que caibam perfeitamente lado a lado
     largura_etiqueta_redimensionada = (largura_total_alvo - 80) // 3
     proporcao = imagem_final.height / imagem_final.width
     altura_etiqueta_redimensionada = int(largura_etiqueta_redimensionada * proporcao)
@@ -218,7 +216,6 @@ if formato == "Retangular Horizontal":
     pos_y = (altura_total_alvo - altura_etiqueta_redimensionada) // 2
     espacamento_x = (largura_total_alvo - (largura_etiqueta_redimensionada * 3)) // 4
     
-    # O bloco "for" foi totalmente indentado de forma correta e segura
     for i in range(3):
         pos_x = espacamento_x + i * (largura_etiqueta_redimensionada + espacamento_x)
         folha_impressao.paste(etiqueta_mini, (pos_x, pos_y))
@@ -229,5 +226,13 @@ if formato == "Retangular Horizontal":
 else:
     imagem_para_download = imagem_final
     nome_ficheiro_download = "etiqueta_individual.jpg"
+    mensagem_botao = "💾 Descarregar Etiqueta Individual (300 DPI)"
+
+
+# Preparação do buffer em JPEG de alta qualidade
+buffer_download = io.BytesIO()
+imagem_para_download.convert("RGB").save(buffer_download, format="JPEG", quality=100, dpi=(300, 300))
+dados_finais_bytes = buffer_download.getvalue()
+
 
 
