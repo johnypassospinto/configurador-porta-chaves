@@ -121,7 +121,7 @@ qr.add_data(conteudo_final_qr)
 qr.make(fit=True)
 img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
 
-# Coordenadas corrigidas (sem parênteses vazios)
+# FIX: Todas as coordenadas foram explicitadas e preenchidas para não quebrar a compilação
 if formato == "Retangular Horizontal":
     x0, y0, x1, y1 = 50, 120, 641, 380  
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
@@ -229,10 +229,9 @@ else:
     mensagem_botao = "💾 Descarregar Etiqueta Individual (300 DPI)"
 
 
-# Preparação do buffer em JPEG de alta qualidade
+# Preparação do arquivo final para download
 buffer_download = io.BytesIO()
 imagem_para_download.convert("RGB").save(buffer_download, format="JPEG", quality=100, dpi=(300, 300))
-dados_finais_bytes = buffer_download.getvalue()
 
 
 
