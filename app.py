@@ -52,7 +52,7 @@ with st.sidebar:
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     
     if formato == "Retangular Horizontal":
-        st.info("📏 O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas duplicadas e ajustadas proporcionalmente.")
+        st.info("📏 O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas duplicadas.")
         
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
@@ -202,30 +202,32 @@ st.image(imagem_final, caption="Design Base Editado", use_container_width=False,
 
 # 🛠️ LÓGICA DE MONTAGEM PARA DOWNLOAD (3 Etiquetas no espaço de 8.5 x 3.5 cm)
 if formato == "Retangular Horizontal":
-    # 8.5 cm x 3.5 cm a 300 DPI equivalem exatamente a 1004 x 413 píxeis
     largura_total_alvo = 1004
     altura_total_alvo = 413
     
-    # Criamos um fundo branco ou da cor do porta-chaves com o tamanho total alvo
+    # Criamos um fundo branco com o tamanho total alvo
     folha_impressao = Image.new("RGB", (largura_total_alvo, altura_total_alvo), "#FFFFFF")
     
-    # Calculamos o tamanho ideal para colocar 3 etiquetas lado a lado com pequenas margens (20px)
-    # 3 etiquetas independentes precisam de caber em 1004px de largura
-    largura_etiqueta_redimensionada = (largura_total_alvo - 80) // 3  # ~308 píxeis cada (~2.6 cm)
-    # Mantemos a proporção exata original da sua etiqueta para não distorcer o QR ou o texto
+    # Calculamos as dimensões das etiquetas para que caibam perfeitamente lado a lado
+    largura_etiqueta_redimensionada = (largura_total_alvo - 80) // 3
     proporcao = imagem_final.height / imagem_final.width
-    altura_etiqueta_redimensionada = int(largura_etiqueta_redimensionada * proporcao)  # ~135 píxeis (~1.1 cm)
+    altura_etiqueta_redimensionada = int(largura_etiqueta_redimensionada * proporcao)
     
-    # Redimensiona a etiqueta desenhada para o tamanho combinado
     etiqueta_mini = imagem_final.resize((largura_etiqueta_redimensionada, altura_etiqueta_redimensionada), Image.Resampling.LANCZOS)
     
-    # Centralização vertical das 3 etiquetas na folha de 3.5cm
     pos_y = (altura_total_alvo - altura_etiqueta_redimensionada) // 2
-    
-    # Distribuição horizontal exata das 3 réplicas
     espacamento_x = (largura_total_alvo - (largura_etiqueta_redimensionada * 3)) // 4
     
+    # O bloco "for" foi totalmente indentado de forma correta e segura
     for i in range(3):
-
+        pos_x = espacamento_x + i * (largura_etiqueta_redimensionada + espacamento_x)
+        folha_impressao.paste(etiqueta_mini, (pos_x, pos_y))
+        
+    imagem_para_download = folha_impressao
+    nome_ficheiro_download = "3_etiquetas_8.5x3.5cm.jpg"
+    mensagem_botao = "💾 Descarregar Painel com 3 Etiquetas (8.5x3.5 cm)"
+else:
+    imagem_para_download = imagem_final
+    nome_ficheiro_download = "etiqueta_individual.jpg"
 
 
