@@ -52,7 +52,7 @@ with st.sidebar:
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     
     if formato == "Retangular Horizontal":
-        st.info("O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas.")
+        st.info("📏 Tamanho da etiqueta: 5.5 cm x 2.5 cm. O download irá gerar um painel com 3 etiquetas prontas a imprimir.")
         
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
@@ -79,7 +79,7 @@ with st.sidebar:
     texto_linha2 = st.text_input("Texto - Linha Inferior:", "+351 900 000 000", key="txt_linha2")
     
     ficheiro_fonte = st.file_uploader("Carregue uma Fonte Customizada (.ttf ou .otf):", type=["ttf", "otf"], key="font_upload")
-    tamanho_fonte = st.slider("Tamanho da Letra:", min_value=12, max_value=40, value=20, step=1, key="font_size")
+    tamanho_fonte = st.slider("Tamanho da Letra:", min_value=12, max_value=50, value=24, step=1, key="font_size")
 
     # 4. Configuração do Código QR
     st.subheader("4. Conteúdo do Código QR")
@@ -92,8 +92,8 @@ with st.sidebar:
     else:
         dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
         
-    max_qr_permitido = 240 if formato == "Retangular Horizontal" else 300
-    padrao_qr = 210 if formato == "Retangular Horizontal" else 180
+    max_qr_permitido = 270 if formato == "Retangular Horizontal" else 300
+    padrao_qr = 240 if formato == "Retangular Horizontal" else 180
     tamanho_qr_manual = st.slider("Tamanho Manual do QR Code:", min_value=100, max_value=max_qr_permitido, value=padrao_qr, step=5, key="qr_code_size")
 
     st.markdown("---")
@@ -106,7 +106,9 @@ st.write("Utilize a barra lateral esquerda para modificar o design em tempo real
 st.markdown("---")
 
 conteudo_final_qr = dados_qr if dados_qr else "Porta Chaves QR"
-tamanho_base = (700, 500)
+
+# Área de trabalho expandida temporária para o desenho nativo
+tamanho_base = (800, 600)
 porta_chaves = Image.new("RGB", tamanho_base, "#F0F2F6")
 canvas = ImageDraw.Draw(porta_chaves)
 
@@ -116,25 +118,33 @@ qr.add_data(conteudo_final_qr)
 qr.make(fit=True)
 img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
 
-# 🛠️ CORREÇÃO ABSOLUTA: Parênteses fechados e coordenadas limpas em todas as formas geométricas
+# 📐 CALIBRAÇÃO GEOMÉTRICA DAS COORDENADAS (Sem parênteses vazios)
 if formato == "Retangular Horizontal":
-    x0, y0, x1, y1 = 50, 120, 641, 380  
+    # 5.5 cm x 2.5 cm a 300 DPI equivale a 649 x 295 pixeis de área de corte
+    x0, y0, x1, y1 = 50, 100, 699, 395  
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
+    
+    # Desenho da etiqueta retangular
     canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
+    
+    # Colocação do QR Code centrado verticalmente à direita
     pos_qr_y = y0 + ((y1 - y0) - tamanho_qr_manual) // 2
-    porta_chaves.paste(img_qr, (410, pos_qr_y))
-    pos_logo_x, pos_logo_y = 250, 135
-    pos_txt1_x, pos_txt1_y = 250, 290
-    pos_txt2_x, pos_txt2_y = 250, 335
+    porta_chaves.paste(img_qr, (440, pos_qr_y))
+    
+    pos_logo_x, pos_logo_y = 260, 125
+    pos_txt1_x, pos_txt1_y = 260, 305
+    pos_txt2_x, pos_txt2_y = 260, 345
     
 elif formato == "Quadrado":
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
+    
     pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
     pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
+    
     pos_logo_x, pos_logo_y = 300, 110
     pos_txt1_x, pos_txt1_y = 300, 390
     pos_txt2_x, pos_txt2_y = 300, 430
@@ -143,19 +153,21 @@ elif formato == "Circular":
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
+    
     pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
     pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
+    
     pos_logo_x, pos_logo_y = 300, 120
     pos_txt1_x, pos_txt1_y = 300, 390
     pos_txt2_x, pos_txt2_y = 300, 430
 
-# Inserção do Logótipo
+# Inserção estável do Logótipo
 if ficheiro_logo is not None:
     try:
         logo = Image.open(ficheiro_logo).convert("RGBA")
-        max_largura = 160 if formato == "Retangular Horizontal" else 180
-        max_altura = 80 if formato == "Retangular Horizontal" else 95
+        max_largura = 180 if formato == "Retangular Horizontal" else 180
+        max_altura = 90 if formato == "Retangular Horizontal" else 95
         logo.thumbnail((max_largura, max_altura))
         logo_final_x = pos_logo_x - (logo.width // 2)
         porta_chaves.paste(logo, (logo_final_x, pos_logo_y), logo if logo.mode == 'RGBA' else None)
@@ -172,65 +184,53 @@ if ficheiro_fonte is not None:
 else:
     font_design = ImageFont.load_default()
 
-# Desenho do texto
-texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
-texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
-canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_design, anchor="mm")
-canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_design, anchor="mm")
+# Desenho dos elementos de texto
+texto_formatated1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
+texto_formatated2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
+canvas.text((pos_txt1_x, pos_txt1_y), texto_formatated1, fill=cor_texto_pc, font=font_design, anchor="mm")
+canvas.text((pos_txt2_x, pos_txt2_y), texto_formatated2, fill=cor_texto_pc, font=font_design, anchor="mm")
 
-# Corte da etiqueta individual
+# Execução do recorte exato da etiqueta individual
 if formato == "Retangular Horizontal":
-    imagem_final = porta_chaves.crop((50, 120, 641, 380))
+    imagem_final = porta_chaves.crop((50, 100, 699, 395))  # Entrega exatamente 649x295 px (5.5x2.5 cm)
 else:
     imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-# Exibe a pré-visualização na tela
+# Exibe a pré-visualização no ecrã de forma limpa
 st.subheader("👁️ Pré-visualização em Tempo Real")
-st.image(imagem_final, caption="Edição atual do seu Porta-Chaves", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
+st.image(imagem_final, caption="Visualização técnica da etiqueta individual (5.5cm x 2.5cm)", use_container_width=False, width=480 if formato == "Retangular Horizontal" else 350)
 
 st.markdown("---")
 st.subheader("📦 Exportar para Impressão")
 
-# Montagem do bloco de download composto
+# 🖨️ MONTAGEM SEM ERROS: Painel de 3 etiquetas lado a lado com tamanho real integral (5.5cm x 2.5cm cada)
 if formato == "Retangular Horizontal":
-    largura_total_alvo = 1004
-    altura_total_alvo = 413
+    # 17.5 cm x 3.5 cm a 300 DPI = 2066 x 413 pixeis totais
+    largura_folha_a4 = 2066
+    altura_folha_a4 = 413
     
-    folha_impressao = Image.new("RGB", (largura_total_alvo, altura_total_alvo), "#FFFFFF")
+    # Criar folha de fundo para a gráfica
+    folha_impressao = Image.new("RGB", (largura_folha_a4, altura_folha_a4), "#FFFFFF")
     
-    largura_mini = (largura_total_alvo - 80) // 3
-    proporcao = imagem_final.height / imagem_final.width
-    altura_mini = int(largura_mini * proporcao)
-    etiqueta_mini = imagem_final.resize((largura_mini, altura_mini), Image.Resampling.LANCZOS)
-    
-    pos_y = (altura_total_alvo - altura_mini) // 2
-    espacamento_x = (largura_total_alvo - (largura_mini * 3)) // 4
+    # Inserção das 3 etiquetas sem qualquer redução de escala (mantém 649x295 px cada)
+    pos_y = (altura_folha_a4 - imagem_final.height) // 2
+    espacamento_x = (largura_folha_a4 - (imagem_final.width * 3)) // 4
     
     for idx in range(3):
-        pos_x = espacamento_x + idx * (largura_mini + espacamento_x)
-        folha_impressao.paste(etiqueta_mini, (pos_x, pos_y))
+        pos_x = espacamento_x + idx * (imagem_final.width + espacamento_x)
+        folha_impressao.paste(imagem_final, (pos_x, pos_y))
         
     imagem_para_exportar = folha_impressao
-    nome_ficheiro = "3_etiquetas_8.5x3.5cm.jpg"
-    texto_botao = "💾 Fazer Download do Painel de 3 Etiquetas (8.5x3.5 cm)"
+    nome_ficheiro = "3_etiquetas_5.5x2.5cm.jpg"
+    texto_botao = "💾 Descarregar Painel Real com 3 Etiquetas (5.5x2.5 cm cada)"
 else:
     imagem_para_exportar = imagem_final
     nome_ficheiro = "etiqueta_individual.jpg"
-    texto_botao = "💾 Fazer Download da Etiqueta Individual"
+    texto_botao = "💾 Descarregar Etiqueta Individual"
 
-# Conversão limpa para bytes
+# Conversão limpa e estável em bytes (JPEG 100% Alta Qualidade)
 buffer_bytes = io.BytesIO()
-imagem_para_exportar.convert("RGB").save(buffer_bytes, format="JPEG", quality=100, dpi=(300, 300))
-conteudo_binario = buffer_bytes.getvalue()
 
-# Criação nativa do botão de download
-st.download_button(
-    label=texto_botao,
-    data=conteudo_binario,
-    file_name=nome_ficheiro,
-    mime="image/jpeg",
-    key="btn_download_seguro_real_final"
-)
 
 
 
