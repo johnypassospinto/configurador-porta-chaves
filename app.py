@@ -117,12 +117,12 @@ qr.add_data(conteudo_final_qr)
 qr.make(fit=True)
 img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert("RGB")
 
-# 🛠️ RESOLVIDO: Todos os furos têm agora as coordenadas corretas e os parênteses fechados
+# Coordenadas e furos corrigidos para cada formato
 if formato == "Retangular Horizontal":
     x0, y0, x1, y1 = 50, 120, 641, 380  
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-    canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4) # Furo corrigido
+    canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
     pos_qr_y = y0 + ((y1 - y0) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (410, pos_qr_y))
     pos_logo_x, pos_logo_y = 250, 135
@@ -132,7 +132,7 @@ if formato == "Retangular Horizontal":
 elif formato == "Quadrado":
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-    canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4) # Furo corrigido
+    canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
     pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
     pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
@@ -143,7 +143,7 @@ elif formato == "Quadrado":
 elif formato == "Circular":
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
-    canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4) # Furo corrigido
+    canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
     pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
     pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
@@ -192,38 +192,42 @@ st.image(imagem_final, caption="Edição atual do seu Porta-Chaves", use_contain
 st.markdown("---")
 st.subheader("📦 Exportar para Impressão")
 
-# Processamento seguro e criação do botão de download
-try:
-    if formato == "Retangular Horizontal":
-        # Montagem do painel alvo (8.5 cm x 3.5 cm @ 300 DPI -> 1004 x 413 px)
-        folha_impressao = Image.new("RGB", (1004, 413), "#FFFFFF")
+# 🛠️ GERAÇÃO DIRETA E SEQUENCIAL DA IMAGEM E DO BOTÃO (Sem try/except causadores de erros de sintaxe)
+if formato == "Retangular Horizontal":
+    largura_total_alvo = 1004
+    altura_total_alvo = 413
+    
+    folha_impressao = Image.new("RGB", (largura_total_alvo, altura_total_alvo), "#FFFFFF")
+    
+    largura_mini = (largura_total_alvo - 80) // 3
+    proporcao = imagem_final.height / imagem_final.width
+    altura_mini = int(largura_mini * proporcao)
+    etiqueta_mini = imagem_final.resize((largura_mini, altura_mini), Image.Resampling.LANCZOS)
+    
+    pos_y = (altura_total_alvo - altura_mini) // 2
+    espacamento_x = (largura_total_alvo - (largura_mini * 3)) // 4
+    
+    for idx in range(3):
+        pos_x = espacamento_x + idx * (largura_mini + espacamento_x)
+        folha_impressao.paste(etiqueta_mini, (pos_x, pos_y))
         
-        largura_mini = (1004 - 80) // 3
-        proporcao = imagem_final.height / imagem_final.width
-        altura_mini = int(largura_mini * proporcao)
-        etiqueta_mini = imagem_final.resize((largura_mini, altura_mini), Image.Resampling.LANCZOS)
-        
-        pos_y = (413 - altura_mini) // 2
-        espacamento_x = (1004 - (largura_mini * 3)) // 4
-        
-        for idx in range(3):
-            pos_x = espacamento_x + idx * (largura_mini + espacamento_x)
-            folha_impressao.paste(etiqueta_mini, (pos_x, pos_y))
-            
-        imagem_para_exportar = folha_impressao
-        nome_ficheiro = "3_etiquetas_8.5x3.5cm.jpg"
-        texto_botao = "💾 Fazer Download do Painel de 3 Etiquetas (8.5x3.5 cm)"
-    else:
-        imagem_para_exportar = imagem_final
-        nome_ficheiro = "etiqueta_individual.jpg"
-        texto_botao = "💾 Fazer Download da Etiqueta Individual"
+    imagem_para_exportar = folha_impressao
+    nome_ficheiro = "3_etiquetas_8.5x3.5cm.jpg"
+    texto_botao = "💾 Fazer Download do Painel de 3 Etiquetas (8.5x3.5 cm)"
+else:
+    imagem_para_exportar = imagem_final
+    nome_ficheiro = "etiqueta_individual.jpg"
+    texto_botao = "💾 Fazer Download da Etiqueta Individual"
 
-    # Converte para bytes de forma limpa
-    buffer_bytes = io.BytesIO()
-    imagem_para_exportar.convert("RGB").save(buffer_bytes, format="JPEG", quality=100, dpi=(300, 300))
-    conteudo_binario = buffer_bytes.getvalue()
+# Converte o resultado final em bytes
+buffer_bytes = io.BytesIO()
+imagem_para_exportar.convert("RGB").save(buffer_bytes, format="JPEG", quality=100, dpi=(300, 300))
+conteudo_binario = buffer_bytes.getvalue()
 
-    # Botão de download sem erros de sintaxe
+# Botão de download posicionado de forma nativa na raiz do Streamlit
+st.download_button(
+    label=texto_botao,
+    data=conteudo_binario,
 
 
 
