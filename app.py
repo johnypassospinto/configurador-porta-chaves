@@ -52,7 +52,7 @@ with st.sidebar:
     formato = st.selectbox("Selecione a forma:", ["Retangular Horizontal", "Quadrado", "Circular"], key="formato_escolhido")
     
     if formato == "Retangular Horizontal":
-        st.info("📏 Tamanho de impressão real: 5.0 cm x 2.2 cm (591 x 260 px @ 300 DPI)")
+        st.info("📏 O download irá gerar um painel de 8.5 cm x 3.5 cm com 3 etiquetas duplicadas e ajustadas proporcionalmente.")
         
     material = st.selectbox("Simular Material/Fundo:", ["Branco Clássico", "Madeira", "Acrílico Preto", "Personalizado"], key="material_escolhido")
     
@@ -93,8 +93,6 @@ with st.sidebar:
     else:
         dados_qr = st.text_input("Insira o número:", "+351910000000", key="dados_tel")
         
-    # 🎯 NOVO CONTROLADOR MANUAL PARA O TAMANHO DO QR CODE
-    # Ajusta os limites recomendados de acordo com o formato para evitar sobreposições grotescas
     max_qr_permitido = 240 if formato == "Retangular Horizontal" else 300
     padrao_qr = 210 if formato == "Retangular Horizontal" else 180
     tamanho_qr_manual = st.slider("Tamanho Manual do QR Code:", min_value=100, max_value=max_qr_permitido, value=padrao_qr, step=5, key="qr_code_size")
@@ -126,14 +124,11 @@ img_qr = qr.make_image(fill_color=cor_texto_pc, back_color=cor_fundo_pc).convert
 # Processar o desenho e as coordenadas conforme a estrutura selecionada
 if formato == "Retangular Horizontal":
     x0, y0, x1, y1 = 50, 120, 641, 380  
-    
-    # Redimensiona utilizando o valor definido pelo slider manual
     img_qr = img_qr.resize((tamanho_qr_manual, tamanho_qr_manual))
     
     canvas.rectangle([x0, y0, x1, y1], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([65, 235, 95, 265], outline=cor_texto_pc, width=4)
     
-    # Alinhamento dinâmico para garantir que o QR Code fica centrado verticalmente mesmo se mudar de tamanho
     pos_qr_y = y0 + ((y1 - y0) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (410, pos_qr_y))
     
@@ -146,7 +141,6 @@ elif formato == "Quadrado":
     canvas.rectangle([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([120, 70, 150, 100], outline=cor_texto_pc, width=4)
     
-    # Centra o QR Code dinamicamente no meio do quadrado
     pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
     pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
@@ -160,7 +154,6 @@ elif formato == "Circular":
     canvas.ellipse([95, 45, 505, 455], fill=cor_fundo_pc, outline=cor_texto_pc, width=5)
     canvas.ellipse([285, 65, 315, 95], outline=cor_texto_pc, width=4)
     
-    # Centra o QR Code dinamicamente no meio do círculo
     pos_qr_x = 95 + ((505 - 95) - tamanho_qr_manual) // 2
     pos_qr_y = 45 + ((455 - 45) - tamanho_qr_manual) // 2
     porta_chaves.paste(img_qr, (pos_qr_x, pos_qr_y))
@@ -169,7 +162,7 @@ elif formato == "Circular":
     pos_txt1_x, pos_txt1_y = 300, 390
     pos_txt2_x, pos_txt2_y = 300, 430
 
-# Inserção estável do Logótipo (se anexado)
+# Inserção do Logótipo
 if ficheiro_logo is not None:
     try:
         logo = Image.open(ficheiro_logo).convert("RGBA")
@@ -181,7 +174,7 @@ if ficheiro_logo is not None:
     except:
         pass
 
-# PROCESSAMENTO DA FONTE TIPOGRÁFICA
+# Processamento da Fonte Tipográfica
 if ficheiro_fonte is not None:
     try:
         bytes_fonte = io.BytesIO(ficheiro_fonte.read())
@@ -191,37 +184,48 @@ if ficheiro_fonte is not None:
 else:
     font_design = ImageFont.load_default()
 
-# Desenho nativo e texto espaçado
+# Desenho do texto
 texto_formatado1 = " ".join(list(texto_linha1)) if texto_linha1 else ""
 texto_formatado2 = " ".join(list(texto_linha2)) if texto_linha2 else ""
-
 canvas.text((pos_txt1_x, pos_txt1_y), texto_formatado1, fill=cor_texto_pc, font=font_design, anchor="mm")
 canvas.text((pos_txt2_x, pos_txt2_y), texto_formatado2, fill=cor_texto_pc, font=font_design, anchor="mm")
 
-# Executa o Crop inteligente
+# Executa o Crop individual da etiqueta
 if formato == "Retangular Horizontal":
-    imagem_final = porta_chaves.crop((50, 120, 641, 380))  # Recorte exato de 591x260 px
+    imagem_final = porta_chaves.crop((50, 120, 641, 380))  # 591x260 px
 else:
     imagem_final = porta_chaves.crop((95, 45, 505, 455))
 
-# Apresenta a imagem centrada na área principal
-st.image(imagem_final, caption="Design em Tempo Real", use_container_width=False, width=500 if formato == "Retangular Horizontal" else 380)
-
-st.markdown("<br>", unsafe_allow_html=True)
-
-# Preparação estável do botão de download (Com metadados em 300 DPI)
-buf = io.BytesIO()
-imagem_final.save(buf, format="PNG", dpi=(300, 300))
-byte_im = buf.getvalue()
-
-st.download_button(
-    label="💾 Descarregar Design para Impressão (300 DPI)",
-    data=byte_im,
-    file_name="porta_chaves_5x2.2cm.png",
-    mime="image/png"
-)
+# Mostra o design singular no ecrã para o utilizador ver o que editou
+st.image(imagem_final, caption="Design Base Editado", use_container_width=False, width=450 if formato == "Retangular Horizontal" else 350)
 
 
+# 🛠️ LÓGICA DE MONTAGEM PARA DOWNLOAD (3 Etiquetas no espaço de 8.5 x 3.5 cm)
+if formato == "Retangular Horizontal":
+    # 8.5 cm x 3.5 cm a 300 DPI equivalem exatamente a 1004 x 413 píxeis
+    largura_total_alvo = 1004
+    altura_total_alvo = 413
+    
+    # Criamos um fundo branco ou da cor do porta-chaves com o tamanho total alvo
+    folha_impressao = Image.new("RGB", (largura_total_alvo, altura_total_alvo), "#FFFFFF")
+    
+    # Calculamos o tamanho ideal para colocar 3 etiquetas lado a lado com pequenas margens (20px)
+    # 3 etiquetas independentes precisam de caber em 1004px de largura
+    largura_etiqueta_redimensionada = (largura_total_alvo - 80) // 3  # ~308 píxeis cada (~2.6 cm)
+    # Mantemos a proporção exata original da sua etiqueta para não distorcer o QR ou o texto
+    proporcao = imagem_final.height / imagem_final.width
+    altura_etiqueta_redimensionada = int(largura_etiqueta_redimensionada * proporcao)  # ~135 píxeis (~1.1 cm)
+    
+    # Redimensiona a etiqueta desenhada para o tamanho combinado
+    etiqueta_mini = imagem_final.resize((largura_etiqueta_redimensionada, altura_etiqueta_redimensionada), Image.Resampling.LANCZOS)
+    
+    # Centralização vertical das 3 etiquetas na folha de 3.5cm
+    pos_y = (altura_total_alvo - altura_etiqueta_redimensionada) // 2
+    
+    # Distribuição horizontal exata das 3 réplicas
+    espacamento_x = (largura_total_alvo - (largura_etiqueta_redimensionada * 3)) // 4
+    
+    for i in range(3):
 
 
 
